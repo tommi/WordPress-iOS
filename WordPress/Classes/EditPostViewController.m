@@ -1,11 +1,3 @@
-//
-//  EditPostViewController.m
-//  WordPress
-//
-//  Created by ? on ?.
-//  Copyright (c) 2013 WordPress. All rights reserved.
-//
-
 #import "EditPostViewController.h"
 #import "EditPostViewController_Internal.h"
 #import "ContextManager.h"
@@ -14,6 +6,7 @@
 #import "WPTableViewCell.h"
 #import "BlogSelectorViewController.h"
 #import "WPBlogSelectorButton.h"
+#import "WPAlertView.h"
 #import "UIImage+Util.h"
 #import "LocationService.h"
 
@@ -143,8 +136,7 @@ CGFloat const EPVCTextViewTopPadding = 7.0f;
     [self createRevisionOfPost];
     
     [[NSNotificationCenter defaultCenter] removeObserver:self];
-	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(insertMediaAbove:) name:@"ShouldInsertMediaAbove" object:nil];
-	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(insertMediaBelow:) name:@"ShouldInsertMediaBelow" object:nil];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(insertMediaBelow:) name:MediaShouldInsertBelowNotification object:nil];
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(removeMedia:) name:@"ShouldRemoveMedia" object:nil];
     
     if (self.editorOpenedBy) {
@@ -284,7 +276,7 @@ CGFloat const EPVCTextViewTopPadding = 7.0f;
         mask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleHeight;
     }
     CGRect frame = CGRectMake(x, 0.0f, width, CGRectGetHeight(self.view.frame) - EPVCOptionsHeight);
-    
+
     // Content text field.
     // Shows the post body.
     // Height should never be smaller than what is required to display its text.
@@ -557,8 +549,8 @@ CGFloat const EPVCTextViewTopPadding = 7.0f;
 
 - (void)showMediaOptions {
     [WPMobileStats flagProperty:StatsPropertyPostDetailClickedMediaOptions forEvent:[self formattedStatEventString:StatsEventPostDetailClosedEditor]];
-    PostMediaViewController *vc = [[PostMediaViewController alloc] initWithPost:self.post];
     self.navigationItem.title = NSLocalizedString(@"Back", nil);
+    MediaBrowserViewController *vc = [[MediaBrowserViewController alloc] initWithPost:self.post];
     [self.navigationController pushViewController:vc animated:YES];
 }
 
@@ -863,10 +855,32 @@ CGFloat const EPVCTextViewTopPadding = 7.0f;
         event = StatsEventPostDetailClickedUpdate;
     }
     
+    if ([buttonTitle isEqualToString:NSLocalizedString(@"Publish", nil)]) {
+        [WPMobileStats incrementPeopleAndSuperProperty:StatsSuperPropertyNumberOfPostsPublished];
+        
+        if ([self.post hasPhoto]) {
+            [WPMobileStats incrementPeopleAndSuperProperty:StatsSuperPropertyNumberOfPostsWithPhotos];
+        }
+        
+        if ([self.post hasVideo]) {
+            [WPMobileStats incrementPeopleAndSuperProperty:StatsSuperPropertyNumberOfPostsWithVideos];
+        }
+        
+        if ([self.post hasCategories]) {
+            [WPMobileStats incrementPeopleAndSuperProperty:StatsSuperPropertyNumberOfPostsWithCategories];
+        }
+        
+        if ([self.post hasTags]) {
+            [WPMobileStats incrementPeopleAndSuperProperty:StatsSuperPropertyNumberOfPostsWithTags];
+        }
+    } else {
+        [WPMobileStats incrementPeopleAndSuperProperty:StatsSuperPropertyNumberOfPostsUpdated];
+    }
+    
     if (event != nil) {
         [WPMobileStats trackEventForWPCom:[self formattedStatEventString:event]];
     }
-
+    
     // This word counting algorithm is from : http://stackoverflow.com/a/13367063
     __block NSInteger originalWordCount = 0;
     [self.post.original.content enumerateSubstringsInRange:NSMakeRange(0, [self.post.original.content length])
@@ -1086,48 +1100,17 @@ CGFloat const EPVCTextViewTopPadding = 7.0f;
 
 #pragma mark Media Formatting
 
-- (void)insertMediaAbove:(NSNotification *)notification {
-    [WPMobileStats trackEventForWPCom:[self formattedStatEventString:StatsEventPostDetailAddedPhoto]];
-    
-	Media *media = (Media *)[notification object];
-	NSString *prefix = @"<br /><br />";
-	
-	if(self.post.content == nil || [self.post.content isEqualToString:@""]) {
-		self.post.content = @"";
-		prefix = @"";
-	}
-	
-	NSMutableString *content = [[NSMutableString alloc] initWithString:media.html];
-	NSRange imgHTML = [_textView.text rangeOfString: content];
-	
-	NSRange imgHTMLPre = [_textView.text rangeOfString:[NSString stringWithFormat:@"%@%@", @"<br /><br />", content]];
- 	NSRange imgHTMLPost = [_textView.text rangeOfString:[NSString stringWithFormat:@"%@%@", content, @"<br /><br />"]];
-	
-	if (imgHTMLPre.location == NSNotFound && imgHTMLPost.location == NSNotFound && imgHTML.location == NSNotFound) {
-		[content appendString:[NSString stringWithFormat:@"%@%@", prefix, self.post.content]];
-        self.post.content = content;
-	}
-	else {
-		NSMutableString *processedText = [[NSMutableString alloc] initWithString:_textView.text];
-		if (imgHTMLPre.location != NSNotFound)
-			[processedText replaceCharactersInRange:imgHTMLPre withString:@""];
-		else if (imgHTMLPost.location != NSNotFound)
-			[processedText replaceCharactersInRange:imgHTMLPost withString:@""];
-		else
-			[processedText replaceCharactersInRange:imgHTML withString:@""];
-        
-		[content appendString:[NSString stringWithFormat:@"<br /><br />%@", processedText]];
-		self.post.content = content;
-	}
-    [self refreshUIForCurrentPost];
-    [self.post save];
-}
-
 - (void)insertMediaBelow:(NSNotification *)notification {
-    [WPMobileStats trackEventForWPCom:[self formattedStatEventString:StatsEventPostDetailAddedPhoto]];
     
 	Media *media = (Media *)[notification object];
 	NSString *prefix = @"<br /><br />";
+    
+    if (media.mediaType == MediaTypeImage) {
+        [WPMobileStats trackEventForWPCom:[self formattedStatEventString:StatsEventPostDetailAddedPhoto]];
+        [WPMobileStats incrementPeopleAndSuperProperty:StatsSuperPropertyNumberOfPhotosAddedToPosts];
+    } else if (media.mediaType == MediaTypeVideo) {
+        [WPMobileStats incrementPeopleAndSuperProperty:StatsSuperPropertyNumberOfVideosAddedToPosts];
+    }
 	
 	if(self.post.content == nil || [self.post.content isEqualToString:@""]) {
 		self.post.content = @"";

@@ -1,12 +1,3 @@
-/*
- * ReaderPostDetailViewController.m
- *
- * Copyright (c) 2013 WordPress. All rights reserved.
- *
- * Licensed under GNU General Public License 2.0.
- * Some rights reserved. See license.txt
- */
-
 #import "ReaderPostDetailViewController.h"
 #import "ReaderPostsViewController.h"
 #import <DTCoreText/DTCoreText.h>
@@ -49,6 +40,7 @@ typedef enum {
 @property (nonatomic, strong) ReaderReblogFormView *readerReblogFormView;
 @property (nonatomic, strong) UIImage *featuredImage;
 @property (nonatomic, strong) UIImage *avatarImage;
+@property (nonatomic, strong) NSURL *avatarImageURL;
 @property (nonatomic) BOOL infiniteScrollEnabled;
 @property (nonatomic, strong) UIActivityIndicatorView *activityFooter;
 @property (nonatomic, strong) UIBarButtonItem *commentButton;
@@ -101,6 +93,14 @@ typedef enum {
         _avatarImage = avatarImage;
         _showInlineActionBar = YES;
 	}
+	return self;
+}
+
+- (id)initWithPost:(ReaderPost *)post avatarImageURL:(NSURL *)avatarImageURL {
+	self = [self initWithPost:post featuredImage:nil avatarImage:nil];
+	if (self) {
+        _avatarImageURL =avatarImageURL;
+    }
 	return self;
 }
 
@@ -237,8 +237,10 @@ typedef enum {
     
     if (self.avatarImage) {
         [self.postView setAvatar:self.avatarImage];
+    } else if (self.avatarImageURL) {
+        [self.postView setAvatarWithURL:self.avatarImageURL];
     }
-    
+
     if (self.featuredImage) {
         [self.postView setFeaturedImage: self.featuredImage];
     }
@@ -624,8 +626,10 @@ typedef enum {
 	[post toggleLikedWithSuccess:^{
         if ([post.isLiked boolValue]) {
             [WPMobileStats trackEventForWPCom:StatsEventReaderLikedPost];
+            [WPMobileStats incrementPeopleAndSuperProperty:StatsSuperPropertyNumberOfItemsLikedInReader];
         } else {
             [WPMobileStats trackEventForWPCom:StatsEventReaderUnlikedPost];
+            [WPMobileStats incrementPeopleAndSuperProperty:StatsSuperPropertyNumberOfItemsUnlikedInReader];
         }
 	} failure:^(NSError *error) {
 		DDLogError(@"Error Liking Post : %@", [error localizedDescription]);

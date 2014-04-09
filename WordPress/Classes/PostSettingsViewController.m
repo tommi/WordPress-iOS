@@ -1,12 +1,3 @@
-/*
- * PostSettingsViewController.m
- *
- * Copyright (c) 2013 WordPress. All rights reserved.
- *
- * Licensed under GNU General Public License 2.0.
- * Some rights reserved. See license.txt
- */
-
 #import "PostSettingsViewController.h"
 #import "PostSettingsViewController_Internal.h"
 
@@ -25,6 +16,7 @@
 #import "UITableViewTextFieldCell.h"
 #import "WordPressAppDelegate.h"
 #import "WPAlertView.h"
+#import "MediaBrowserViewController.h"
 #import "WPTableViewController.h"
 #import "WPTableViewActivityCell.h"
 #import "WPTableViewSectionHeaderView.h"
@@ -107,6 +99,7 @@ static NSString *const TableViewActivityCellIdentifier = @"TableViewActivityCell
     UITapGestureRecognizer *gestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dismissTagsKeyboardIfAppropriate:)];
     gestureRecognizer.cancelsTouchesInView = NO;
     gestureRecognizer.numberOfTapsRequired = 1;
+
     [self.tableView addGestureRecognizer:gestureRecognizer];
 
     [self.tableView registerNib:[UINib nibWithNibName:@"WPTableViewActivityCell" bundle:nil] forCellReuseIdentifier:TableViewActivityCellIdentifier];
@@ -587,6 +580,7 @@ static NSString *const TableViewActivityCellIdentifier = @"TableViewActivityCell
         [geoCell setCoordinate:self.post.geolocation andAddress:address];
         cell = geoCell;
         cell.tag = PostSettingsRowGeolocationMap;
+
     }
     return cell;
 }
@@ -781,7 +775,12 @@ static NSString *const TableViewActivityCellIdentifier = @"TableViewActivityCell
 }
 
 - (void)showFeaturedImageSelector {
-    FeaturedImageViewController *controller = [[FeaturedImageViewController alloc] initWithPost:self.post];
+    UIViewController *controller;
+    if (self.post.post_thumbnail) {
+        controller = [[FeaturedImageViewController alloc] initWithPost:self.post];
+    } else {
+        controller = [[MediaBrowserViewController alloc] initWithPost:self.post selectingFeaturedImage:YES];
+    }
     [self.navigationController pushViewController:controller animated:YES];
 }
 
@@ -796,29 +795,21 @@ static NSString *const TableViewActivityCellIdentifier = @"TableViewActivityCell
 }
 
 - (void)loadFeaturedImage:(NSIndexPath *)indexPath {
-    if (self.post.featuredImageURL) {
-        if (!self.featuredImage) {
-            CGFloat width = CGRectGetWidth(self.view.frame);
-            if (IS_IPAD) {
-                width = WPTableViewFixedWidth;
-            }
-            width = width - (PostFeaturedImageCellMargin * 2); // left and right cell margins
-            NSURL *url = [NSURL URLWithString:self.post.featuredImageURL];
-            CGFloat height = ceilf(width * 0.66);
-            CGSize imageSize = CGSizeMake(width, height);
-
-            [self.imageSource fetchImageForURL:url
-                                      withSize:imageSize
-                                     indexPath:indexPath
-                                     isPrivate:self.post.blog.isPrivate];
+    NSURL *url = [NSURL URLWithString:self.post.featuredImage.remoteURL];
+    if (url) {
+        CGFloat width = CGRectGetWidth(self.view.frame);
+        if (IS_IPAD) {
+            width = WPTableViewFixedWidth;
         }
+        width = width - (PostFeaturedImageCellMargin * 2); // left and right cell margins
+        CGFloat height = ceilf(width * 0.66);
+        CGSize imageSize = CGSizeMake(width, height);
+
+        [self.imageSource fetchImageForURL:url
+                                  withSize:imageSize
+                                 indexPath:indexPath
+                                 isPrivate:self.post.blog.isPrivate];
         
-    } else {
-        [self.post getFeaturedImageURLWithSuccess:^{
-            [self loadFeaturedImage:indexPath];
-        } failure:^(NSError *error) {
-            DDLogError(@"Error fetching featured image URL: @%", error);
-        }];
     }
 }
 
