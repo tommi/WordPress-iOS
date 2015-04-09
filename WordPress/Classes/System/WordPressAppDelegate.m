@@ -11,7 +11,6 @@
 #import <Reachability/Reachability.h>
 #import <Simperium/Simperium.h>
 #import <SVProgressHUD/SVProgressHUD.h>
-#import <UIDeviceIdentifier/UIDeviceHardware.h>
 #import <WordPressApi/WordPressApi.h>
 #import <WordPress-AppbotX/ABX.h>
 #import <WordPress-iOS-Shared/UIImage+Util.h>
@@ -24,10 +23,8 @@
 #import "WPCrashlytics.h"
 
 // Categories & extensions
-#import "NSBundle+VersionNumberHelper.h"
 #import "NSProcessInfo+Util.h"
 #import "NSString+Helpers.h"
-#import "UIDevice+Helpers.h"
 
 // Data model
 #import "Blog.h"
@@ -41,7 +38,7 @@
 #import "WPAppFilesManager.h"
 
 // Logging
-#import "WPLogger.h"
+#import "WPDebugLogger.h"
 
 // Misc managers, helpers, utilities
 #import "AppRatingUtility.h"
@@ -69,14 +66,13 @@
 #import "WPPostViewController.h"
 #import "WPTabBarController.h"
 
-int ddLogLevel                                                  = LOG_LEVEL_INFO;
 static NSString * const MustShowWhatsNewPopup                   = @"MustShowWhatsNewPopup";
 
 @interface WordPressAppDelegate () <UITabBarControllerDelegate, UIAlertViewDelegate, BITHockeyManagerDelegate>
 
 @property (nonatomic, strong, readwrite) WPAppAnalytics                 *analytics;
 @property (nonatomic, strong, readwrite) WPCrashlytics                  *crashlytics;
-@property (nonatomic, strong, readwrite) WPLogger                       *logger;
+@property (nonatomic, strong, readwrite) WPDebugLogger                       *logger;
 @property (nonatomic, strong, readwrite) WPLookbackPresenter            *lookbackPresenter;
 @property (nonatomic, strong, readwrite) Reachability                   *internetReachability;
 @property (nonatomic, strong, readwrite) Simperium                      *simperium;
@@ -115,7 +111,7 @@ static NSString * const MustShowWhatsNewPopup                   = @"MustShowWhat
     [self configureSimperiumWithLaunchOptions:launchOptions];
 
     // Crash reporting, logging
-    self.logger = [[WPLogger alloc] init];
+    self.logger = [[WPDebugLogger alloc] init];
     [self configureHockeySDK];
     [self configureCrashlytics];
     [self initializeAppRatingUtility];
@@ -132,7 +128,7 @@ static NSString * const MustShowWhatsNewPopup                   = @"MustShowWhat
     [self listenLocalNotifications];
     
     // Debugging
-    [self printDebugLaunchInfoWithLaunchOptions:launchOptions];
+    [self.logger printDebugLaunchInfoWithLaunchOptions:launchOptions];
     [self toggleExtraDebuggingIfNeeded];
     [self removeCredentialsForDebug];
 
@@ -817,44 +813,6 @@ static NSString * const MustShowWhatsNewPopup                   = @"MustShowWhat
 
 #pragma mark - Debugging
 
-- (void)printDebugLaunchInfoWithLaunchOptions:(NSDictionary *)launchOptions
-{
-    UIDevice *device = [UIDevice currentDevice];
-    NSInteger crashCount = [[NSUserDefaults standardUserDefaults] integerForKey:@"crashCount"];
-    NSArray *languages = [[NSUserDefaults standardUserDefaults] objectForKey:@"AppleLanguages"];
-    NSString *currentLanguage = [languages objectAtIndex:0];
-    BOOL extraDebug = [[NSUserDefaults standardUserDefaults] boolForKey:@"extra_debug"];
-    BlogService *blogService = [[BlogService alloc] initWithManagedObjectContext:[[ContextManager sharedInstance] mainContext]];
-    NSArray *blogs = [blogService blogsForAllAccounts];
-    
-    DDLogInfo(@"===========================================================================");
-    DDLogInfo(@"Launching WordPress for iOS %@...", [[NSBundle bundleForClass:[self class]] detailedVersionNumber]);
-    DDLogInfo(@"Crash count:       %d", crashCount);
-#ifdef DEBUG
-    DDLogInfo(@"Debug mode:  Debug");
-#else
-    DDLogInfo(@"Debug mode:  Production");
-#endif
-    DDLogInfo(@"Extra debug: %@", extraDebug ? @"YES" : @"NO");
-    DDLogInfo(@"Device model: %@ (%@)", [UIDeviceHardware platformString], [UIDeviceHardware platform]);
-    DDLogInfo(@"OS:        %@ %@", device.systemName, device.systemVersion);
-    DDLogInfo(@"Language:  %@", currentLanguage);
-    DDLogInfo(@"UDID:      %@", device.wordPressIdentifier);
-    DDLogInfo(@"APN token: %@", [NotificationsManager registeredPushNotificationsToken]);
-    DDLogInfo(@"Launch options: %@", launchOptions);
-    
-    if (blogs.count > 0) {
-        DDLogInfo(@"All blogs on device:");
-        for (Blog *blog in blogs) {
-            DDLogInfo(@"Name: %@ URL: %@ XML-RPC: %@ isWpCom: %@ blogId: %@ jetpackAccount: %@", blog.blogName, blog.url, blog.xmlrpc, blog.account.isWpcom ? @"YES" : @"NO", blog.blogID, !!blog.jetpackAccount ? @"PRESENT" : @"NONE");
-        }
-    } else {
-        DDLogInfo(@"No blogs configured on device.");
-    }
-    
-    DDLogInfo(@"===========================================================================");
-}
-
 - (void)removeCredentialsForDebug
 {
 #if DEBUG
@@ -870,37 +828,6 @@ static NSString * const MustShowWhatsNewPopup                   = @"MustShowWhat
         }];
     }];
 #endif
-}
-
-- (void)toggleExtraDebuggingIfNeeded
-{
-    if ([self noBlogsAndNoWordPressDotComAccount]) {
-        // When there are no blogs in the app the settings screen is unavailable.
-        // In this case, enable extra_debugging by default to help troubleshoot any issues.
-        if ([[NSUserDefaults standardUserDefaults] objectForKey:@"orig_extra_debug"] != nil) {
-            return; // Already saved. Don't save again or we could loose the original value.
-        }
-
-        NSString *origExtraDebug = [[NSUserDefaults standardUserDefaults] boolForKey:@"extra_debug"] ? @"YES" : @"NO";
-        [[NSUserDefaults standardUserDefaults] setObject:origExtraDebug forKey:@"orig_extra_debug"];
-        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"extra_debug"];
-        ddLogLevel = LOG_LEVEL_VERBOSE;
-        [NSUserDefaults resetStandardUserDefaults];
-    } else {
-        NSString *origExtraDebug = [[NSUserDefaults standardUserDefaults] stringForKey:@"orig_extra_debug"];
-        if (origExtraDebug == nil) {
-            return;
-        }
-
-        // Restore the original setting and remove orig_extra_debug.
-        [[NSUserDefaults standardUserDefaults] setBool:[origExtraDebug boolValue] forKey:@"extra_debug"];
-        [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"orig_extra_debug"];
-        [NSUserDefaults resetStandardUserDefaults];
-
-        if ([origExtraDebug boolValue]) {
-            ddLogLevel = LOG_LEVEL_VERBOSE;
-        }
-    }
 }
 
 #pragma mark - Local Notifications Helpers
