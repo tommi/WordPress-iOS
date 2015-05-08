@@ -20,10 +20,10 @@ class TodayViewController: UIViewController, NCWidgetProviding {
         let sharedDefaults = NSUserDefaults(suiteName: WPAppGroupName)!
         self.siteId = sharedDefaults.objectForKey(WPStatsTodayWidgetUserDefaultsSiteIdKey) as! NSNumber?
 
-        visitorsLabel?.text = NSLocalizedString("Visitors", comment: "Stats Visitors Label")
-        viewsLabel?.text = NSLocalizedString("Views", comment: "Stats Views Label")
-        instructionsLabel?.text = NSLocalizedString("Launch WordPress and configure in Stats under My Sites", comment: "Unconfigured Today Widget instructions label")
-        mySitesButton?.text = NSLocalizedString("My Sites", comment: "My Sites button label")
+        visitorsLabel.text = NSLocalizedString("Visitors", comment: "Stats Visitors Label")
+        viewsLabel.text = NSLocalizedString("Views", comment: "Stats Views Label")
+        instructionsLabel.text = NSLocalizedString("Launch WordPress and configure in Stats under My Sites", comment: "Unconfigured Today Widget instructions label")
+        mySitesButton.setTitle(NSLocalizedString("Launch WordPress", comment: "Launch WordPress button from Today Widget label"), forState: .Normal)
     }
     
     override func viewWillDisappear(animated: Bool) {
