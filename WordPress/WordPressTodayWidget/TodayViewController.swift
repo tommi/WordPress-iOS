@@ -22,6 +22,8 @@ class TodayViewController: UIViewController, NCWidgetProviding {
 
         visitorsLabel?.text = NSLocalizedString("Visitors", comment: "Stats Visitors Label")
         viewsLabel?.text = NSLocalizedString("Views", comment: "Stats Views Label")
+        instructionsLabel?.text = NSLocalizedString("Launch WordPress and configure in Stats under My Sites", comment: "Unconfigured Today Widget instructions label")
+        mySitesButton?.text = NSLocalizedString("My Sites", comment: "My Sites button label")
     }
     
     override func viewWillDisappear(animated: Bool) {
