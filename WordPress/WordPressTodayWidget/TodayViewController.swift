@@ -7,6 +7,8 @@ class TodayViewController: UIViewController, NCWidgetProviding {
     @IBOutlet var visitorsLabel: UILabel!
     @IBOutlet var viewsCountLabel: UILabel!
     @IBOutlet var viewsLabel: UILabel!
+    @IBOutlet var instructionsLabel: UILabel!
+    @IBOutlet var mySitesButton: UIButton!
     
     var siteName: String = ""
     var visitorCount: String = ""
@@ -49,7 +51,9 @@ class TodayViewController: UIViewController, NCWidgetProviding {
     }
     
     @IBAction func launchContainingApp() {
-        self.extensionContext!.openURL(NSURL(string: "\(WPCOM_SCHEME)://viewstats?siteId=\(siteId!)")!, completionHandler: nil)
+        if let siteId = siteId {
+            self.extensionContext!.openURL(NSURL(string: "\(WPCOM_SCHEME)://viewstats?siteId=\(siteId)")!, completionHandler: nil)
+        }
     }
     
     func widgetPerformUpdateWithCompletionHandler(completionHandler: ((NCUpdateResult) -> Void)!) {
@@ -69,7 +73,7 @@ class TodayViewController: UIViewController, NCWidgetProviding {
             WPDDLogWrapper.logError("Missing site ID, timeZone or oauth2Token")
             
             let bundle = NSBundle(forClass: TodayViewController.classForCoder())
-            NCWidgetController.widgetController().setHasContent(false, forWidgetWithBundleIdentifier: bundle.bundleIdentifier)
+            self.hideAppropriateLabels(statsIsConfigured: false)
             
             completionHandler(NCUpdateResult.Failed)
             return
@@ -80,6 +84,7 @@ class TodayViewController: UIViewController, NCWidgetProviding {
         statsService.retrieveTodayStatsWithCompletionHandler({ (wpStatsSummary: StatsSummary!) -> Void in
             WPDDLogWrapper.logInfo("Downloaded data in the Today widget")
             
+            self.hideAppropriateLabels(statsIsConfigured: true)
             self.visitorCount = wpStatsSummary.visitors
             self.viewCount = wpStatsSummary.views
             
@@ -104,4 +109,13 @@ class TodayViewController: UIViewController, NCWidgetProviding {
         return oauth2Token as String?
     }
     
+    func hideAppropriateLabels(#statsIsConfigured: Bool) {
+        siteNameLabel.hidden = !statsIsConfigured
+        visitorsCountLabel.hidden = !statsIsConfigured
+        visitorsLabel.hidden = !statsIsConfigured
+        viewsCountLabel.hidden = !statsIsConfigured
+        viewsLabel.hidden = !statsIsConfigured
+        instructionsLabel.hidden = statsIsConfigured
+        mySitesButton.hidden = statsIsConfigured
+    }
 }

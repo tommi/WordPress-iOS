@@ -164,9 +164,6 @@ static NSString * const MustShowWhatsNewPopup                   = @"MustShowWhat
         [[PocketAPI sharedAPI] setConsumerKey:[WordPressComApiCredentials pocketConsumerKey]];
     });
     
-    // Configure Today Widget
-    [self determineIfTodayWidgetIsConfiguredAndShowAppropriately];
-
     if ([WPPostViewController makeNewEditorAvailable]) {
         [self setMustShowWhatsNewPopup:YES];
     }
@@ -973,12 +970,6 @@ static NSString * const MustShowWhatsNewPopup                   = @"MustShowWhat
 
 
 #pragma mark - Today Extension
-
-- (void)determineIfTodayWidgetIsConfiguredAndShowAppropriately
-{
-    TodayExtensionService *service = [TodayExtensionService new];
-    [service hideTodayWidgetIfNotConfigured];
-}
 
 - (void)removeTodayWidgetConfiguration
 {

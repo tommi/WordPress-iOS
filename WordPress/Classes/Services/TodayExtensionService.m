@@ -54,9 +54,6 @@
                               andServiceName:WPStatsTodayWidgetOAuth2TokenKeychainServiceName
                                  accessGroup:WPStatsTodayWidgetOAuth2TokenKeychainAccessGroup
                                        error:nil];
-    
-    // Turns the widget off for this site
-    [[NCWidgetController widgetController] setHasContent:NO forWidgetWithBundleIdentifier:@"org.wordpress.WordPressTodayWidget"];
 }
 
 - (void)hideTodayWidgetIfNotConfigured
@@ -66,9 +63,7 @@
     }
     
     BOOL widgetIsConfigured = [self widgetIsConfigured];
-    if (!widgetIsConfigured) {
-        [[NCWidgetController widgetController] setHasContent:NO forWidgetWithBundleIdentifier:@"org.wordpress.WordPressTodayWidget"];
-    } else {
+    if (widgetIsConfigured) {
         [[NCWidgetController widgetController] setHasContent:YES forWidgetWithBundleIdentifier:@"org.wordpress.WordPressTodayWidget"];
     }
 }

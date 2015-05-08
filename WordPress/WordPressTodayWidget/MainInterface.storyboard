@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="6254" systemVersion="14B25" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" initialViewController="M4Y-Lb-cyx">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="7702" systemVersion="14D136" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" initialViewController="M4Y-Lb-cyx">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="6247"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="7701"/>
         <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
     </dependencies>
     <scenes>
@@ -27,7 +27,7 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="7,025" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="IOg-zT-oAD">
-                                <rect key="frame" x="16" y="37" width="70.5" height="34"/>
+                                <rect key="frame" x="16" y="37" width="71" height="34"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="34" id="a98-2f-m7a"/>
                                 </constraints>
@@ -36,7 +36,7 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="10,394" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="pyt-KX-qbk">
-                                <rect key="frame" x="150.5" y="37" width="86" height="34"/>
+                                <rect key="frame" x="151" y="37" width="86" height="34"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="34" id="0FK-D7-cq1"/>
                                 </constraints>
@@ -45,29 +45,46 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Visitors" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ya5-b8-L12">
-                                <rect key="frame" x="16" y="72" width="55.5" height="20"/>
+                                <rect key="frame" x="16" y="72" width="56" height="20"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="20" id="Mtu-sJ-0n2"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="HelveticaNeue" family="Helvetica Neue" pointSize="17"/>
-                                <color key="textColor" cocoaTouchSystemColor="lightTextColor"/>
+                                <color key="textColor" red="1" green="1" blue="1" alpha="0.59999999999999998" colorSpace="calibratedRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Views" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="d87-vS-4g1">
-                                <rect key="frame" x="150.5" y="72" width="44.5" height="20"/>
+                                <rect key="frame" x="151" y="72" width="45" height="20"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="20" id="2Ue-mA-3A5"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" name="HelveticaNeue" family="Helvetica Neue" pointSize="17"/>
-                                <color key="textColor" cocoaTouchSystemColor="lightTextColor"/>
+                                <color key="textColor" red="1" green="1" blue="1" alpha="0.59999999999999998" colorSpace="calibratedRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
+                            <label hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Launch WordPress and configure in Stats under My Sites" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nO9-dV-RYK">
+                                <rect key="frame" x="16" y="8" width="272" height="44"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="44" id="Acd-Jm-BfO"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <color key="textColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="fX2-Ez-mWa">
+                                <rect key="frame" x="96" y="60" width="129" height="30"/>
+                                <state key="normal" title="Launch WordPress">
+                                    <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                                </state>
+                            </button>
                         </subviews>
                         <gestureRecognizers/>
                         <constraints>
                             <constraint firstItem="pyt-KX-qbk" firstAttribute="leading" secondItem="d87-vS-4g1" secondAttribute="leading" id="3OW-rE-laZ"/>
+                            <constraint firstItem="nO9-dV-RYK" firstAttribute="leading" secondItem="S3S-Oj-5AN" secondAttribute="leadingMargin" id="9gK-ka-Qu9"/>
                             <constraint firstItem="Wcm-ss-zFo" firstAttribute="leading" secondItem="S3S-Oj-5AN" secondAttribute="leadingMargin" id="BKO-pK-u0S"/>
                             <constraint firstItem="IOg-zT-oAD" firstAttribute="baseline" secondItem="pyt-KX-qbk" secondAttribute="baseline" id="Rwj-ZH-X82"/>
+                            <constraint firstItem="nO9-dV-RYK" firstAttribute="top" secondItem="Ft6-oW-KC0" secondAttribute="bottom" constant="8" id="USO-uc-aUm"/>
                             <constraint firstItem="pyt-KX-qbk" firstAttribute="leading" secondItem="IOg-zT-oAD" secondAttribute="trailing" constant="64" id="V2d-td-NiN"/>
                             <constraint firstItem="IOg-zT-oAD" firstAttribute="top" secondItem="Wcm-ss-zFo" secondAttribute="bottom" constant="9" id="VLf-Va-atw"/>
                             <constraint firstItem="d87-vS-4g1" firstAttribute="baseline" secondItem="ya5-b8-L12" secondAttribute="baseline" id="abe-eG-JY0"/>
@@ -75,6 +92,9 @@
                             <constraint firstItem="ya5-b8-L12" firstAttribute="top" secondItem="IOg-zT-oAD" secondAttribute="bottom" constant="1" id="ddP-Zk-Pvl"/>
                             <constraint firstItem="ya5-b8-L12" firstAttribute="leading" secondItem="S3S-Oj-5AN" secondAttribute="leadingMargin" id="e3i-Nn-Ax4"/>
                             <constraint firstItem="IOg-zT-oAD" firstAttribute="leading" secondItem="S3S-Oj-5AN" secondAttribute="leadingMargin" id="efL-lJ-Wdt"/>
+                            <constraint firstItem="FKl-LY-JtV" firstAttribute="top" secondItem="fX2-Ez-mWa" secondAttribute="bottom" constant="8" id="hHs-5C-zH4"/>
+                            <constraint firstAttribute="centerX" secondItem="fX2-Ez-mWa" secondAttribute="centerX" id="ioS-a6-WGc"/>
+                            <constraint firstItem="nO9-dV-RYK" firstAttribute="trailing" secondItem="S3S-Oj-5AN" secondAttribute="trailingMargin" constant="-16" id="jkH-qb-Jhu"/>
                             <constraint firstAttribute="trailing" secondItem="Wcm-ss-zFo" secondAttribute="trailing" constant="16" id="ndY-yf-y6u"/>
                             <constraint firstItem="FKl-LY-JtV" firstAttribute="top" secondItem="ya5-b8-L12" secondAttribute="bottom" priority="250" constant="6" id="qAp-GP-g03"/>
                         </constraints>
@@ -89,9 +109,13 @@
                     <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
                     <size key="freeformSize" width="320" height="98"/>
                     <connections>
+                        <outlet property="instructionsLabel" destination="nO9-dV-RYK" id="awe-6i-PUh"/>
+                        <outlet property="mySitesButton" destination="fX2-Ez-mWa" id="UMG-gk-L2d"/>
                         <outlet property="siteNameLabel" destination="Wcm-ss-zFo" id="WsJ-6K-WZ5"/>
                         <outlet property="viewsCountLabel" destination="pyt-KX-qbk" id="fkK-Tp-fGM"/>
+                        <outlet property="viewsLabel" destination="d87-vS-4g1" id="HgV-Rb-Uiv"/>
                         <outlet property="visitorsCountLabel" destination="IOg-zT-oAD" id="8TU-zn-Njk"/>
+                        <outlet property="visitorsLabel" destination="ya5-b8-L12" id="bU8-yq-QZ1"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="vXp-U4-Rya" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -101,7 +125,7 @@
                     </connections>
                 </tapGestureRecognizer>
             </objects>
-            <point key="canvasLocation" x="69" y="35"/>
+            <point key="canvasLocation" x="69" y="17"/>
         </scene>
     </scenes>
     <simulatedMetricsContainer key="defaultSimulatedMetrics">
