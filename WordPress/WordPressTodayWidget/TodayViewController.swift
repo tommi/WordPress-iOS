@@ -22,7 +22,7 @@ class TodayViewController: UIViewController, NCWidgetProviding {
 
         visitorsLabel.text = NSLocalizedString("Visitors", comment: "Stats Visitors Label")
         viewsLabel.text = NSLocalizedString("Views", comment: "Stats Views Label")
-        instructionsLabel.text = NSLocalizedString("Launch WordPress and configure in Stats under My Sites", comment: "Unconfigured Today Widget instructions label")
+        instructionsLabel.text = NSLocalizedString("Configure WordPress.com & Jetpack Sites Stats under My Sites", comment: "Unconfigured Today Widget instructions label")
         mySitesButton.setTitle(NSLocalizedString("Launch WordPress", comment: "Launch WordPress button from Today Widget label"), forState: .Normal)
     }
     
