@@ -1,43 +1,41 @@
 #import "SupportViewController.h"
-#import "WPWebViewController.h"
-#import "ActivityLogViewController.h"
-#import <UIDeviceIdentifier/UIDeviceHardware.h>
-#import "WordPressAppDelegate.h"
+
 #import <DDFileLogger.h>
-#import "WPTableViewSectionFooterView.h"
 #import <Helpshift/Helpshift.h>
-#import "WPAnalytics.h"
-#import <WordPress-iOS-Shared/WPStyleGuide.h>
-#import "ContextManager.h"
-#import "WPAccount.h"
-#import "AccountService.h"
-#import "BlogService.h"
-#import "Blog.h"
-#import "NSBundle+VersionNumberHelper.h"
-#import "WordPress-Swift.h"
+#import <UIDeviceIdentifier/UIDeviceHardware.h>
+
 #import "AboutViewController.h"
-#import "WPTabBarController.h"
-#import "WPAppAnalytics.h"
+#import "ActivityLogViewController.h"
+#import "Blog.h"
+#import "BlogService.h"
+#import "ContextManager.h"
 #import "HelpshiftUtils.h"
+#import "NSBundle+VersionNumberHelper.h"
+#import "WordPressAppDelegate.h"
+#import "WordPress-Swift.h"
+#import "WPAppAnalytics.h"
 #import "WPLogger.h"
+#import "WPTabBarController.h"
+#import "WPTableViewSectionFooterView.h"
 
-static NSString *const UserDefaultsFeedbackEnabled = @"wp_feedback_enabled";
-static NSString * const kExtraDebugDefaultsKey = @"extra_debug";
-int const kActivitySpinnerTag = 101;
-int const kHelpshiftWindowTypeFAQs = 1;
-int const kHelpshiftWindowTypeConversation = 2;
+static NSString * const UserDefaultsFeedbackEnabled = @"wp_feedback_enabled";
+static NSString * const ExtraDebugDefaultsKey = @"extra_debug";
+static NSString * const FeedbackCheckUrl = @"https://api.wordpress.org/iphoneapp/feedback-check/1.0/";
+static NSString * const ResponseKeyID = @"ID";
+static NSString * const ResponseKeyEmail = @"email";
+static NSString * const ResponseKeyDisplayName = @"display_name";
+static NSString * const CellIdentifierSwitchAccessory = @"SupportViewSwitchAccessoryCell";
+static NSString * const CellIdentifierBadgeAccessory = @"SupportViewBadgeAccessoryCell";
+static NSString * const CellIdentifier = @"SupportViewStandardCell";
 
-static NSString *const FeedbackCheckUrl = @"https://api.wordpress.org/iphoneapp/feedback-check/1.0/";
+static const NSInteger ActivitySpinnerTag = 101;
+static const NSInteger HelpshiftWindowTypeFAQs = 1;
+static const NSInteger HelpshiftWindowTypeConversation = 2;
 
-static CGFloat const SupportRowHeight = 44.0f;
+static const CGFloat SupportRowHeight = 44.0;
+static const CGFloat UnreadCountLabelCornerRadius = 15.0;
 
-@interface SupportViewController ()
-
-@property (nonatomic, assign) BOOL feedbackEnabled;
-
-@end
-
-@implementation SupportViewController
+static const CGRect FrameForHelpShiftUnreadCountLabel = {0.0, 0.0, 50.0, 30.0};
 
 typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
 {
@@ -45,6 +43,12 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
     SettingsSectionFeedback,
     SettingsSectionActivityLog,
 };
+
+@interface SupportViewController ()
+@property (nonatomic, assign) BOOL feedbackEnabled;
+@end
+
+@implementation SupportViewController
 
 + (void)checkIfFeedbackShouldBeEnabled
 {
@@ -96,21 +100,33 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
     [presenter presentViewController:aNavigationController animated:YES completion:nil];
 }
 
-- (id)init
+
+#pragma mark - Lifecycle Methods
+
+- (void)dealloc
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (instancetype)init
 {
     self = [super initWithStyle:UITableViewStyleGrouped];
     if (self) {
-        self.title = NSLocalizedString(@"Support", @"");
         _feedbackEnabled = YES;
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(helpshiftUnreadCountUpdated:)
+                                                     name:HelpshiftUnreadCountUpdatedNotification
+                                                   object:nil];
     }
-
     return self;
 }
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    
+
+    self.title = NSLocalizedString(@"Support", @"Title of the support screen.");
+
     if ([UIDevice isOS8]) { // iOS8 or higher
         [self.tableView setEstimatedRowHeight:SupportRowHeight];
         [self.tableView setRowHeight:UITableViewAutomaticDimension];
@@ -126,7 +142,11 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
     [self.navigationController setNavigationBarHidden:NO animated:YES];
 
     if ([self.navigationController.viewControllers count] == 1) {
-        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Close", @"") style:[WPStyleGuide barButtonStyleForBordered] target:self action:@selector(dismiss)];
+        NSString *title = NSLocalizedString(@"Close", @"Title of a close button.");
+        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:title
+                                                                                  style:[WPStyleGuide barButtonStyleForBordered]
+                                                                                 target:self
+                                                                                 action:@selector(dismiss)];
     }
 }
 
@@ -134,26 +154,17 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
 {
     [super viewWillAppear:animated];
 
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(helpshiftUnreadCountUpdated:)
-                                                 name:HelpshiftUnreadCountUpdatedNotification
-                                               object:nil];
-
     [HelpshiftUtils refreshUnreadNotificationCount];
     [WPAnalytics track:WPAnalyticsStatOpenedSupport];
 }
 
-- (void)viewWillDisappear:(BOOL)animated
-{
-    [super viewWillDisappear:animated];
 
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
-}
+#pragma mark - Spinner Methods
 
 - (void)showLoadingSpinner
 {
     UIActivityIndicatorView *loading = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
-    loading.tag = kActivitySpinnerTag;
+    loading.tag = ActivitySpinnerTag;
     loading.center = self.view.center;
     loading.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
     [self.view addSubview:loading];
@@ -162,13 +173,15 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
 
 - (void)hideLoadingSpinner
 {
-    [[self.view viewWithTag:kActivitySpinnerTag] removeFromSuperview];
+    [[self.view viewWithTag:ActivitySpinnerTag] removeFromSuperview];
 }
 
-- (void)prepareAndDisplayHelpshiftWindowOfType:(int)helpshiftType
+
+#pragma mark - Helpshift Methods
+
+- (void)prepareAndDisplayHelpshiftWindowOfType:(NSInteger)helpshiftType
 {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setBool:YES forKey:UserDefaultsHelpshiftWasUsed];
+    [self flagHelpshiftWasUsed];
 
     NSManagedObjectContext *context = [[ContextManager sharedInstance] newDerivedContext];
     AccountService *accountService = [[AccountService alloc] initWithManagedObjectContext:context];
@@ -179,7 +192,7 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
     NSMutableDictionary *metaData = [NSMutableDictionary dictionaryWithDictionary:@{ @"isWPCom" : isWPCom }];
 
     NSArray *allBlogs = [blogService blogsForAllAccounts];
-    for (int i = 0; i < allBlogs.count; i++) {
+    for (NSInteger i = 0; i < [allBlogs count]; i++) {
         Blog *blog = allBlogs[i];
 
         NSDictionary *blogData = @{[NSString stringWithFormat:@"blog-%i-Name", i+1]: blog.blogName,
@@ -189,46 +202,85 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
         [metaData addEntriesFromDictionary:blogData];
     }
 
-    if (defaultAccount) {
-        [self showLoadingSpinner];
-
-        [metaData addEntriesFromDictionary:@{@"WPCom Username": defaultAccount.username}];
-
-        [defaultAccount.restApi GET:@"me"
-                         parameters:nil
-                            success:^(AFHTTPRequestOperation *operation, id responseObject) {
-                                [self hideLoadingSpinner];
-
-                                NSString *displayName = ([responseObject valueForKey:@"display_name"]) ? [responseObject objectForKey:@"display_name"] : nil;
-                                NSString *emailAddress = ([responseObject valueForKey:@"email"]) ? [responseObject objectForKey:@"email"] : nil;
-                                NSString *userID = ([responseObject valueForKey:@"ID"]) ? [[responseObject objectForKey:@"ID"] stringValue] : nil;
-
-                                [Helpshift setUserIdentifier:userID];
-                                [self displayHelpshiftWindowOfType:helpshiftType withUsername:displayName andEmail:emailAddress andMetadata:metaData];
-                            } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-                                [self hideLoadingSpinner];
-                                [self displayHelpshiftWindowOfType:helpshiftType withUsername:defaultAccount.username andEmail:nil andMetadata:metaData];
-                            }];
-    } else {
-        [self displayHelpshiftWindowOfType:helpshiftType withUsername:nil andEmail:nil andMetadata:metaData];
+    if (!defaultAccount) {
+        [self displayHelpshiftWindowOfType:helpshiftType
+                              withUsername:nil
+                                  andEmail:nil
+                               andMetadata:metaData];
+        return;
     }
+
+    NSString *defaultAccountUserName = defaultAccount.username;
+    [self showLoadingSpinner];
+
+    [metaData addEntriesFromDictionary:@{@"WPCom Username": defaultAccount.username}];
+
+    [defaultAccount.restApi GET:@"me"
+                     parameters:nil
+                        success:^(AFHTTPRequestOperation *operation, id responseObject) {
+                            [self hideLoadingSpinner];
+
+                            NSString *displayName = [responseObject stringForKey:ResponseKeyDisplayName];
+                            NSString *emailAddress = [responseObject stringForKey:ResponseKeyEmail];
+                            NSString *userID = [responseObject stringForKey:ResponseKeyID];
+
+                            [Helpshift setUserIdentifier:userID];
+                            [self displayHelpshiftWindowOfType:helpshiftType
+                                                  withUsername:displayName
+                                                      andEmail:emailAddress
+                                                   andMetadata:metaData];
+
+                        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+                            [self hideLoadingSpinner];
+                            [self displayHelpshiftWindowOfType:helpshiftType
+                                                  withUsername:defaultAccountUserName
+                                                      andEmail:nil
+                                                   andMetadata:metaData];
+                        }];
 }
 
-- (void)displayHelpshiftWindowOfType:(int)helpshiftType
+- (void)displayHelpshiftWindowOfType:(NSInteger)helpshiftType
                         withUsername:(NSString*)username
                             andEmail:(NSString*)email
                          andMetadata:(NSDictionary*)metaData
 {
     [Helpshift setName:username andEmail:email];
 
-    if (helpshiftType == kHelpshiftWindowTypeFAQs) {
+    if (helpshiftType == HelpshiftWindowTypeFAQs) {
         [[Helpshift sharedInstance] showFAQs:self withOptions:@{HSCustomMetadataKey: metaData}];
-    } else if (helpshiftType == kHelpshiftWindowTypeConversation) {
+
+    } else if (helpshiftType == HelpshiftWindowTypeConversation) {
         [[Helpshift sharedInstance] showConversation:self withOptions:@{HSCustomMetadataKey: metaData}];
     }
 }
 
-#pragma mark - Table view data source
+- (void)flagHelpshiftWasUsed
+{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setBool:YES forKey:UserDefaultsHelpshiftWasUsed];
+    [defaults synchronize];
+}
+
+- (UILabel *)newHelpshiftUnreadCountLabelWithCount:(NSInteger)count
+{
+    UILabel *helpshiftUnreadCountLabel = [[UILabel alloc] initWithFrame:FrameForHelpShiftUnreadCountLabel];
+    helpshiftUnreadCountLabel.layer.masksToBounds = YES;
+    helpshiftUnreadCountLabel.layer.cornerRadius = UnreadCountLabelCornerRadius;
+    helpshiftUnreadCountLabel.textAlignment = NSTextAlignmentCenter;
+    helpshiftUnreadCountLabel.backgroundColor = [WPStyleGuide newKidOnTheBlockBlue];
+    helpshiftUnreadCountLabel.textColor = [UIColor whiteColor];
+    helpshiftUnreadCountLabel.text = [NSString stringWithFormat:@"%ld", count];
+    return helpshiftUnreadCountLabel;
+}
+
+- (void)helpshiftUnreadCountUpdated:(NSNotification *)notification
+{
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:0 inSection:SettingsSectionFAQForums];
+    [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
+}
+
+
+#pragma mark - TableView Delegate Methods
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
@@ -257,7 +309,6 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
     WPTableViewCell *cell = nil;
     if (indexPath.section == SettingsSectionActivityLog && (indexPath.row == 1 || indexPath.row == 2)) {
         // Settings / Extra Debug
-        static NSString *CellIdentifierSwitchAccessory = @"SupportViewSwitchAccessoryCell";
         cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifierSwitchAccessory];
 
         if (cell == nil) {
@@ -269,14 +320,14 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
         [switchAccessory addTarget:self action:@selector(handleCellSwitchChanged:) forControlEvents:UIControlEventValueChanged];
         cell.accessoryView = switchAccessory;
     } else if (indexPath.section == SettingsSectionFAQForums && indexPath.row == 0) {
-        static NSString *CellIdentifierBadgeAccessory = @"SupportViewBadgeAccessoryCell";
+
         cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifierBadgeAccessory];
 
         if (cell == nil) {
             cell = [[WPTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifierBadgeAccessory];
         }
     } else {
-        static NSString *CellIdentifier = @"SupportViewStandardCell";
+
         cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
 
         if (cell == nil) {
@@ -296,21 +347,15 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
 
     if (indexPath.section == SettingsSectionFAQForums) {
         if (indexPath.row == 0) {
-            cell.textLabel.text = NSLocalizedString(@"WordPress Help Center", @"");
+            cell.textLabel.text = NSLocalizedString(@"WordPress Help Center", @"A label. Tapping it opens the FAQ.");
             [WPStyleGuide configureTableViewActionCell:cell];
         } else if (indexPath.row == 1) {
             if ([HelpshiftUtils isHelpshiftEnabled]) {
-                cell.textLabel.text = NSLocalizedString(@"Contact Us", nil);
+                cell.textLabel.text = NSLocalizedString(@"Contact Us", @"A label. Tapping it opens a new screen forthe live-chat feature.");
 
                 if ([HelpshiftUtils unreadNotificationCount] > 0) {
-                    UILabel *helpshiftUnreadCountLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 50, 30)];
-                    helpshiftUnreadCountLabel.layer.masksToBounds = YES;
-                    helpshiftUnreadCountLabel.layer.cornerRadius = 15;
-                    helpshiftUnreadCountLabel.textAlignment = NSTextAlignmentCenter;
-                    helpshiftUnreadCountLabel.backgroundColor = [WPStyleGuide newKidOnTheBlockBlue];
-                    helpshiftUnreadCountLabel.textColor = [UIColor whiteColor];
-                    helpshiftUnreadCountLabel.text = [NSString stringWithFormat:@"%ld", [HelpshiftUtils unreadNotificationCount]];
-
+                    NSInteger count = [HelpshiftUtils unreadNotificationCount];
+                    UILabel *helpshiftUnreadCountLabel = [self newHelpshiftUnreadCountLabelWithCount:count];
                     cell.accessoryView = helpshiftUnreadCountLabel;
                     cell.accessoryType = UITableViewCellAccessoryNone;
                 } else {
@@ -318,12 +363,12 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
                     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
                 }
             } else {
-                cell.textLabel.text = NSLocalizedString(@"WordPress Forums", @"");
+                cell.textLabel.text = NSLocalizedString(@"WordPress Forums", @"A label. Tapping it opens a web page displaying the WordPress forums.");
                 [WPStyleGuide configureTableViewActionCell:cell];
             }
         }
     } else if (indexPath.section == SettingsSectionFeedback) {
-        cell.textLabel.text = NSLocalizedString(@"E-mail Support", @"");
+        cell.textLabel.text = NSLocalizedString(@"E-mail Support", @"A label. Tapping it opens a new email addressed to WordPress support.");
         cell.textLabel.textAlignment = NSTextAlignmentCenter;
         cell.accessoryType = UITableViewCellAccessoryNone;
         [WPStyleGuide configureTableViewActionCell:cell];
@@ -332,7 +377,7 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
 
         if (indexPath.row == 0) {
             // App Version
-            cell.textLabel.text = NSLocalizedString(@"Version", @"");
+            cell.textLabel.text = NSLocalizedString(@"Version", @"Preceds the version number of the app.");
             NSString *appVersion = [[NSBundle mainBundle] detailedVersionNumber];
 #if DEBUG
             appVersion = [appVersion stringByAppendingString:@" (DEV)"];
@@ -341,19 +386,19 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
             cell.selectionStyle = UITableViewCellSelectionStyleNone;
         } else if (indexPath.row == 1) {
             cell.selectionStyle = UITableViewCellSelectionStyleNone;
-            cell.textLabel.text = NSLocalizedString(@"Extra Debug", @"");
+            cell.textLabel.text = NSLocalizedString(@"Extra Debug", @"A label identifying the Extra Debug feature.");
             UISwitch *aSwitch = (UISwitch *)cell.accessoryView;
-            aSwitch.on = [[NSUserDefaults standardUserDefaults] boolForKey:kExtraDebugDefaultsKey];
+            aSwitch.on = [[NSUserDefaults standardUserDefaults] boolForKey:ExtraDebugDefaultsKey];
         } else if (indexPath.row == 2) {
             cell.selectionStyle = UITableViewCellSelectionStyleNone;
             cell.textLabel.text = NSLocalizedString(@"Anonymous Usage Tracking", @"Setting for enabling anonymous usage tracking");
             UISwitch *aSwitch = (UISwitch *)cell.accessoryView;
             aSwitch.on = [[WordPressAppDelegate sharedInstance].analytics isTrackingUsage];
         } else if (indexPath.row == 3) {
-            cell.textLabel.text = NSLocalizedString(@"Activity Logs", @"");
+            cell.textLabel.text = NSLocalizedString(@"Activity Logs", @"A label. Tapping it displays a list of the app's saved activity logs.");
             cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
         } else if (indexPath.row == 4) {
-            cell.textLabel.text = NSLocalizedString(@"About", @"");
+            cell.textLabel.text = NSLocalizedString(@"About", @"A label. Tapping it displays the app's About screen.");
             cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
         }
     }
@@ -361,7 +406,8 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
 
 - (UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section
 {
-    WPTableViewSectionFooterView *header = [[WPTableViewSectionFooterView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.view.bounds), 0)];
+    CGRect frame = CGRectMake(0.0, 0.0, CGRectGetWidth(self.view.bounds), 0.0);
+    WPTableViewSectionFooterView *header = [[WPTableViewSectionFooterView alloc] initWithFrame:frame];
     header.title = [self titleForFooterInSection:section];
     return header;
 }
@@ -382,6 +428,7 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
     return nil;
 }
 
+
 #pragma mark - Table view delegate
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
@@ -391,14 +438,14 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
     if (indexPath.section == SettingsSectionFAQForums) {
         if (indexPath.row == 0) {
             if ([HelpshiftUtils isHelpshiftEnabled]) {
-                [self prepareAndDisplayHelpshiftWindowOfType:kHelpshiftWindowTypeFAQs];
+                [self prepareAndDisplayHelpshiftWindowOfType:HelpshiftWindowTypeFAQs];
             } else {
                 [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://apps.wordpress.org/support/"]];
             }
         } else if (indexPath.row == 1) {
             if ([HelpshiftUtils isHelpshiftEnabled]) {
                 [WPAnalytics track:WPAnalyticsStatSupportOpenedHelpshiftScreen];
-                [self prepareAndDisplayHelpshiftWindowOfType:kHelpshiftWindowTypeConversation];
+                [self prepareAndDisplayHelpshiftWindowOfType:HelpshiftWindowTypeConversation];
             } else {
                 [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://ios.forums.wordpress.org"]];
             }
@@ -408,18 +455,23 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
             MFMailComposeViewController *mailComposeViewController = [self feedbackMailViewController];
             [self presentViewController:mailComposeViewController animated:YES completion:nil];
         } else {
-            [WPError showAlertWithTitle:NSLocalizedString(@"Feedback", nil) message:NSLocalizedString(@"Your device is not configured to send e-mail.", nil)];
+            [WPError showAlertWithTitle:NSLocalizedString(@"Feedback", @"A title of a prompt, giving feedback on an action taken by the user.")
+                                message:NSLocalizedString(@"Your device is not configured to send e-mail.", @"A short error message warning that the user's device is not set up to send email.")];
         }
     } else if (indexPath.section == SettingsSectionActivityLog) {
         if (indexPath.row == 3) {
             ActivityLogViewController *activityLogViewController = [[ActivityLogViewController alloc] init];
             [self.navigationController pushViewController:activityLogViewController animated:YES];
+
         } else if (indexPath.row == 4) {
-            AboutViewController *aboutViewController = [[AboutViewController alloc] initWithNibName:@"AboutViewController" bundle:nil];
+            NSString *nibName = NSStringFromClass([AboutViewController class]);
+            AboutViewController *aboutViewController = [[AboutViewController alloc] initWithNibName:nibName bundle:nil];
             [self.navigationController pushViewController:aboutViewController animated:YES];
+
         }
     }
 }
+
 
 #pragma mark - SupportViewController methods
 
@@ -428,7 +480,7 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
     UISwitch *aSwitch = (UISwitch *)sender;
 
     if (aSwitch.tag == 1) {
-        [[NSUserDefaults standardUserDefaults] setBool:aSwitch.on forKey:kExtraDebugDefaultsKey];
+        [[NSUserDefaults standardUserDefaults] setBool:aSwitch.on forKey:ExtraDebugDefaultsKey];
         [NSUserDefaults resetStandardUserDefaults];
     } else {
         [[WordPressAppDelegate sharedInstance].analytics setTrackingUsage:aSwitch.on];
@@ -477,29 +529,12 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
+
 #pragma mark - MFMailComposeViewControllerDelegate methods
 
 - (void)mailComposeController:(MFMailComposeViewController *)controller didFinishWithResult:(MFMailComposeResult)result error:(NSError *)error
 {
-    switch (result) {
-        case MFMailComposeResultCancelled:
-            break;
-        case MFMailComposeResultFailed:
-            break;
-        case MFMailComposeResultSaved:
-        case MFMailComposeResultSent:
-            break;
-    }
-
-    [self dismissViewControllerAnimated:YES completion:nil];
-}
-
-#pragma mark - Helpshift Notifications
-
-- (void)helpshiftUnreadCountUpdated:(NSNotification *)notification
-{
-    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:0 inSection:SettingsSectionFAQForums];
-    [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
+    [self dismiss];
 }
 
 @end
