@@ -28,6 +28,16 @@ static NSString * const CellIdentifierSwitchAccessory = @"SupportViewSwitchAcces
 static NSString * const CellIdentifierBadgeAccessory = @"SupportViewBadgeAccessoryCell";
 static NSString * const CellIdentifier = @"SupportViewStandardCell";
 
+static NSString * const HelpCenterRowID = @"HelpCenterRowID";
+static NSString * const ContactUsRowID = @"ContactUsRowID";
+static NSString * const ForumsRowID = @"ForumsRowID";
+static NSString * const EmailSupportRowID = @"EmailSupportRowID";
+static NSString * const AboutRowID = @"AboutRowID";
+static NSString * const VersionRowID = @"VersionRowID";
+static NSString * const UsageTrackingRowID = @"UsageTrackingRowID";
+static NSString * const ActivityLogsRowID = @"ActivityLogsRowID";
+static NSString * const ExtraDebugRowID = @"ExtraDebugRowID";
+
 static const NSInteger ActivitySpinnerTag = 101;
 static const NSInteger HelpshiftWindowTypeFAQs = 1;
 static const NSInteger HelpshiftWindowTypeConversation = 2;
@@ -44,8 +54,43 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
     SettingsSectionActivityLog,
 };
 
+
+
+@interface SupportSectionItem : NSObject
+@property (nonatomic, strong) NSArray *rows;
+@property (nonatomic, strong) NSString *footerText;
+@end
+@implementation SupportSectionItem
+@end
+
+@interface SupportRowItem : NSObject
+
+@property (nonatomic, strong) NSString *rowID;
+@property (nonatomic, strong) NSString *title;
+@property (nonatomic, strong) NSString *cellIdentifier;
+
++ (instancetype)itemWithRowID:(NSString *)rowID title:(NSString *)title cellIdentifier:(NSString *)cellIdentifier;
+
+@end
+
+
+@implementation SupportRowItem
+
++ (instancetype)itemWithRowID:(NSString *)rowID title:(NSString *)title cellIdentifier:(NSString *)cellIdentifier
+{
+    SupportRowItem *item = [SupportRowItem new];
+    item.rowID = rowID;
+    item.title = title;
+    item.cellIdentifier = cellIdentifier;
+    return item;
+}
+
+@end
+
+
 @interface SupportViewController ()
 @property (nonatomic, assign) BOOL feedbackEnabled;
+@property (nonatomic, strong) NSMutableArray *sectionsArray;
 @end
 
 @implementation SupportViewController
@@ -126,14 +171,8 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
     [super viewDidLoad];
 
     self.title = NSLocalizedString(@"Support", @"Title of the support screen.");
-
-    if ([UIDevice isOS8]) { // iOS8 or higher
-        [self.tableView setEstimatedRowHeight:SupportRowHeight];
-        [self.tableView setRowHeight:UITableViewAutomaticDimension];
-    } else {
-        [self.tableView setRowHeight:SupportRowHeight];
-    }
-
+    [self configureTableView];
+    [self configureSections];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     self.feedbackEnabled = [defaults boolForKey:UserDefaultsFeedbackEnabled];
 
@@ -156,6 +195,101 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
 
     [HelpshiftUtils refreshUnreadNotificationCount];
     [WPAnalytics track:WPAnalyticsStatOpenedSupport];
+}
+
+
+#pragma mark - Configuration
+
+- (void)configureTableView
+{
+
+    [self.tableView registerClass:[WPTableViewCell class] forCellReuseIdentifier:CellIdentifier];
+    [self.tableView registerClass:[WPTableViewCell class] forCellReuseIdentifier:CellIdentifierBadgeAccessory];
+    [self.tableView registerClass:[WPTableViewCell class] forCellReuseIdentifier:CellIdentifierSwitchAccessory];
+
+    if ([UIDevice isOS8]) { // iOS8 or higher
+        [self.tableView setEstimatedRowHeight:SupportRowHeight];
+        [self.tableView setRowHeight:UITableViewAutomaticDimension];
+    } else {
+        [self.tableView setRowHeight:SupportRowHeight];
+    }
+}
+
+- (void)configureSections
+{
+    self.sectionsArray = [NSMutableArray array];
+    [self configureFAQSection];
+    [self configureFeedbackSection];
+    [self configureActivitySection];
+}
+
+- (void)configureFAQSection
+{
+    SupportRowItem *helpCenterRow = [SupportRowItem itemWithRowID:HelpCenterRowID
+                                                            title:NSLocalizedString(@"WordPress Help Center", @"A label. Tapping it opens the FAQ.")
+                                                   cellIdentifier:CellIdentifier];
+
+    SupportRowItem *contactRow;
+    if ([HelpshiftUtils isHelpshiftEnabled]) {
+        contactRow = [SupportRowItem itemWithRowID:ContactUsRowID
+                                             title:NSLocalizedString(@"Contact Us", @"A label. Tapping it opens a new screen forthe live-chat feature.")
+                                    cellIdentifier:CellIdentifierBadgeAccessory];
+    } else {
+        contactRow = [SupportRowItem itemWithRowID:ForumsRowID
+                                             title:NSLocalizedString(@"WordPress Forums", @"A label. Tapping it opens a web page displaying the WordPress forums.")
+                                    cellIdentifier:CellIdentifier];
+    }
+
+    SupportSectionItem *section = [SupportSectionItem new];
+    section.footerText = NSLocalizedString(@"Visit the Help Center to get answers to common questions, or visit the Forums to ask new ones.", @"");
+    section.rows = @[contactRow, helpCenterRow];
+
+    [self.sectionsArray addObject:section];
+}
+
+- (void)configureFeedbackSection
+{
+    if (!self.feedbackEnabled) {
+        return;
+    }
+    SupportRowItem *row = [SupportRowItem itemWithRowID:EmailSupportRowID
+                                                  title:NSLocalizedString(@"E-mail Support", @"A label. Tapping it opens a new email addressed to WordPress support.")
+                                         cellIdentifier:CellIdentifier];
+
+    SupportSectionItem *section = [SupportSectionItem new];
+    section.rows = @[row];
+
+    [self.sectionsArray addObject:section];
+}
+
+- (void)configureActivitySection
+{
+    SupportRowItem *aboutRow = [SupportRowItem itemWithRowID:AboutRowID
+                                                       title:NSLocalizedString(@"About", @"A label. Tapping it displays the app's About screen.")
+                                              cellIdentifier:CellIdentifier];
+
+    SupportRowItem *versionRow = [SupportRowItem itemWithRowID:VersionRowID
+                                                         title:NSLocalizedString(@"Version", @"Preceds the version number of the app.")
+                                                cellIdentifier:CellIdentifier];
+
+    SupportRowItem *usageRow = [SupportRowItem itemWithRowID:UsageTrackingRowID
+                                                       title:NSLocalizedString(@"Anonymous Usage Tracking", @"Setting for enabling anonymous usage tracking")
+                                              cellIdentifier:CellIdentifierSwitchAccessory];
+
+    SupportRowItem *activityRow = [SupportRowItem itemWithRowID:ActivityLogsRowID
+                                                          title:NSLocalizedString(@"Activity Logs", @"A label. Tapping it displays a list of the app's saved activity logs.")
+                                                 cellIdentifier:CellIdentifier];
+
+    SupportRowItem *debugRow = [SupportRowItem itemWithRowID:ExtraDebugRowID
+                                                       title:NSLocalizedString(@"Extra Debug", @"A label identifying the Extra Debug feature.")
+                                              cellIdentifier:CellIdentifierSwitchAccessory];
+
+
+    NSArray *rows = @[aboutRow, versionRow, usageRow, activityRow, debugRow];
+    SupportSectionItem *section = [SupportSectionItem new];
+    section.footerText = NSLocalizedString(@"The Extra Debug feature includes additional information in activity logs, and can help us troubleshoot issues with the app.", @"");
+    section.rows = rows;
+    [self.sectionsArray addObject:section];
 }
 
 
@@ -275,8 +409,23 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
 
 - (void)helpshiftUnreadCountUpdated:(NSNotification *)notification
 {
-    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:0 inSection:SettingsSectionFAQForums];
-    [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
+    NSIndexPath *indexPath;
+    for (NSInteger i = 0; i < [self.sectionsArray count]; i++) {
+        SupportSectionItem *sectionItem = [self.sectionsArray objectAtIndex:i];
+        for (NSInteger j = 0; j < [sectionItem.rows count]; j++) {
+            SupportRowItem *rowItem = [sectionItem.rows objectAtIndex:j];
+            if ([rowItem.rowID isEqualToString:HelpCenterRowID]) {
+                indexPath = [NSIndexPath indexPathForRow:j inSection:i];
+                break;
+            }
+        }
+        if (indexPath) {
+            break;
+        }
+    }
+    if (indexPath) {
+        [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
+    }
 }
 
 
@@ -284,56 +433,26 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
-    return 3;
+    return [self.sectionsArray count];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    if (section == SettingsSectionFAQForums) {
-        return 2;
-    }
+    SupportSectionItem *sectionItem = [self.sectionsArray objectAtIndex:section];
+    return [sectionItem.rows count];
+}
 
-    if (section == SettingsSectionActivityLog) {
-        return 5;
-    }
-
-    if (section == SettingsSectionFeedback) {
-        return self.feedbackEnabled ? 1 : 0;
-    }
-
-    return 1;
+- (SupportRowItem *)rowItemForIndexPath:(NSIndexPath *)indexPath
+{
+    SupportSectionItem *section = [self.sectionsArray objectAtIndex:indexPath.section];
+    return [section.rows objectAtIndex:indexPath.row];
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    WPTableViewCell *cell = nil;
-    if (indexPath.section == SettingsSectionActivityLog && (indexPath.row == 1 || indexPath.row == 2)) {
-        // Settings / Extra Debug
-        cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifierSwitchAccessory];
+    SupportRowItem *rowItem = [self rowItemForIndexPath:indexPath];
 
-        if (cell == nil) {
-            cell = [[WPTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifierSwitchAccessory];
-        }
-
-        UISwitch *switchAccessory = [[UISwitch alloc] initWithFrame:CGRectZero];
-        switchAccessory.tag = indexPath.row;
-        [switchAccessory addTarget:self action:@selector(handleCellSwitchChanged:) forControlEvents:UIControlEventValueChanged];
-        cell.accessoryView = switchAccessory;
-    } else if (indexPath.section == SettingsSectionFAQForums && indexPath.row == 0) {
-
-        cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifierBadgeAccessory];
-
-        if (cell == nil) {
-            cell = [[WPTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifierBadgeAccessory];
-        }
-    } else {
-
-        cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
-
-        if (cell == nil) {
-            cell = [[WPTableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:CellIdentifier];
-        }
-    }
+    WPTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:rowItem.cellIdentifier];
 
     [self configureCell:cell atIndexPath:indexPath];
 
@@ -342,66 +461,65 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
 
 - (void)configureCell:(UITableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath
 {
-    cell.textLabel.textAlignment = NSTextAlignmentLeft;
     [WPStyleGuide configureTableViewCell:cell];
 
-    if (indexPath.section == SettingsSectionFAQForums) {
-        if (indexPath.row == 0) {
-            cell.textLabel.text = NSLocalizedString(@"WordPress Help Center", @"A label. Tapping it opens the FAQ.");
-            [WPStyleGuide configureTableViewActionCell:cell];
-        } else if (indexPath.row == 1) {
-            if ([HelpshiftUtils isHelpshiftEnabled]) {
-                cell.textLabel.text = NSLocalizedString(@"Contact Us", @"A label. Tapping it opens a new screen forthe live-chat feature.");
+    SupportRowItem *rowItem = [self rowItemForIndexPath:indexPath];
+    cell.textLabel.text = rowItem.title;
+    cell.textLabel.textAlignment = NSTextAlignmentLeft;
+    cell.accessoryView = nil;
 
-                if ([HelpshiftUtils unreadNotificationCount] > 0) {
-                    NSInteger count = [HelpshiftUtils unreadNotificationCount];
-                    UILabel *helpshiftUnreadCountLabel = [self newHelpshiftUnreadCountLabelWithCount:count];
-                    cell.accessoryView = helpshiftUnreadCountLabel;
-                    cell.accessoryType = UITableViewCellAccessoryNone;
-                } else {
-                    cell.accessoryView = nil;
-                    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-                }
-            } else {
-                cell.textLabel.text = NSLocalizedString(@"WordPress Forums", @"A label. Tapping it opens a web page displaying the WordPress forums.");
-                [WPStyleGuide configureTableViewActionCell:cell];
-            }
+    if ([rowItem.rowID isEqualToString:HelpCenterRowID]) {
+        [WPStyleGuide configureTableViewActionCell:cell];
+
+    } else if ([rowItem.rowID isEqualToString:ContactUsRowID]) {
+        if ([HelpshiftUtils unreadNotificationCount] > 0) {
+            NSInteger count = [HelpshiftUtils unreadNotificationCount];
+            UILabel *helpshiftUnreadCountLabel = [self newHelpshiftUnreadCountLabelWithCount:count];
+            cell.accessoryView = helpshiftUnreadCountLabel;
+            cell.accessoryType = UITableViewCellAccessoryNone;
+        } else {
+            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
         }
-    } else if (indexPath.section == SettingsSectionFeedback) {
-        cell.textLabel.text = NSLocalizedString(@"E-mail Support", @"A label. Tapping it opens a new email addressed to WordPress support.");
+
+    } else if ([rowItem.rowID isEqualToString:ForumsRowID]) {
+        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+        [WPStyleGuide configureTableViewActionCell:cell];
+
+    } else if ([rowItem.rowID isEqualToString:EmailSupportRowID]) {
         cell.textLabel.textAlignment = NSTextAlignmentCenter;
         cell.accessoryType = UITableViewCellAccessoryNone;
         [WPStyleGuide configureTableViewActionCell:cell];
-    } else if (indexPath.section == SettingsSectionActivityLog) {
-        cell.textLabel.textAlignment = NSTextAlignmentLeft;
 
-        if (indexPath.row == 0) {
-            // App Version
-            cell.textLabel.text = NSLocalizedString(@"Version", @"Preceds the version number of the app.");
-            NSString *appVersion = [[NSBundle mainBundle] detailedVersionNumber];
+    } else if ([rowItem.rowID isEqualToString:AboutRowID]) {
+        cell.textLabel.text = NSLocalizedString(@"About", @"A label. Tapping it displays the app's About screen.");
+        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+
+    } else if ([rowItem.rowID isEqualToString:VersionRowID]) {
+        NSString *appVersion = [[NSBundle mainBundle] detailedVersionNumber];
 #if DEBUG
-            appVersion = [appVersion stringByAppendingString:@" (DEV)"];
+        appVersion = [appVersion stringByAppendingString:@" (DEV)"];
 #endif
-            cell.detailTextLabel.text = appVersion;
-            cell.selectionStyle = UITableViewCellSelectionStyleNone;
-        } else if (indexPath.row == 1) {
-            cell.selectionStyle = UITableViewCellSelectionStyleNone;
-            cell.textLabel.text = NSLocalizedString(@"Extra Debug", @"A label identifying the Extra Debug feature.");
-            UISwitch *aSwitch = (UISwitch *)cell.accessoryView;
-            aSwitch.on = [[NSUserDefaults standardUserDefaults] boolForKey:ExtraDebugDefaultsKey];
-        } else if (indexPath.row == 2) {
-            cell.selectionStyle = UITableViewCellSelectionStyleNone;
-            cell.textLabel.text = NSLocalizedString(@"Anonymous Usage Tracking", @"Setting for enabling anonymous usage tracking");
-            UISwitch *aSwitch = (UISwitch *)cell.accessoryView;
-            aSwitch.on = [[WordPressAppDelegate sharedInstance].analytics isTrackingUsage];
-        } else if (indexPath.row == 3) {
-            cell.textLabel.text = NSLocalizedString(@"Activity Logs", @"A label. Tapping it displays a list of the app's saved activity logs.");
-            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-        } else if (indexPath.row == 4) {
-            cell.textLabel.text = NSLocalizedString(@"About", @"A label. Tapping it displays the app's About screen.");
-            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-        }
+        cell.detailTextLabel.text = appVersion;
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+
+    } else if ([rowItem.rowID isEqualToString:UsageTrackingRowID]) {
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        UISwitch *aSwitch = (UISwitch *)cell.accessoryView;
+        aSwitch.on = [[WordPressAppDelegate sharedInstance].analytics isTrackingUsage];
+
+    } else if ([rowItem.rowID isEqualToString:ActivityLogsRowID]) {
+        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+
+    } else if ([rowItem.rowID isEqualToString:ExtraDebugRowID]) {
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        UISwitch *aSwitch = (UISwitch *)cell.accessoryView;
+        aSwitch.on = [[NSUserDefaults standardUserDefaults] boolForKey:ExtraDebugDefaultsKey];
     }
+}
+
+- (void)configureHelpCenterCell:(UITableViewCell *)cell
+{
+
 }
 
 - (UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section
@@ -420,12 +538,8 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
 
 - (NSString *)titleForFooterInSection:(NSInteger)section
 {
-    if (section == SettingsSectionFAQForums) {
-        return NSLocalizedString(@"Visit the Help Center to get answers to common questions, or visit the Forums to ask new ones.", @"");
-    } else if (section == SettingsSectionActivityLog) {
-        return NSLocalizedString(@"The Extra Debug feature includes additional information in activity logs, and can help us troubleshoot issues with the app.", @"");
-    }
-    return nil;
+    SupportSectionItem *sectionItem = [self.sectionsArray objectAtIndex:section];
+    return sectionItem.footerText;
 }
 
 
@@ -435,22 +549,23 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
 {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
 
-    if (indexPath.section == SettingsSectionFAQForums) {
-        if (indexPath.row == 0) {
-            if ([HelpshiftUtils isHelpshiftEnabled]) {
-                [self prepareAndDisplayHelpshiftWindowOfType:HelpshiftWindowTypeFAQs];
-            } else {
-                [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://apps.wordpress.org/support/"]];
-            }
-        } else if (indexPath.row == 1) {
-            if ([HelpshiftUtils isHelpshiftEnabled]) {
-                [WPAnalytics track:WPAnalyticsStatSupportOpenedHelpshiftScreen];
-                [self prepareAndDisplayHelpshiftWindowOfType:HelpshiftWindowTypeConversation];
-            } else {
-                [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://ios.forums.wordpress.org"]];
-            }
+    SupportRowItem *rowItem = [self rowItemForIndexPath:indexPath];
+
+    if ([rowItem.rowID isEqualToString:HelpCenterRowID]) {
+        if ([HelpshiftUtils isHelpshiftEnabled]) {
+            [self prepareAndDisplayHelpshiftWindowOfType:HelpshiftWindowTypeFAQs];
+        } else {
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://apps.wordpress.org/support/"]];
         }
-    } else if (indexPath.section == SettingsSectionFeedback) {
+
+    } else if ([rowItem.rowID isEqualToString:ContactUsRowID]) {
+        [WPAnalytics track:WPAnalyticsStatSupportOpenedHelpshiftScreen];
+        [self prepareAndDisplayHelpshiftWindowOfType:HelpshiftWindowTypeConversation];
+
+    } else if ([rowItem.rowID isEqualToString:ForumsRowID]) {
+        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://ios.forums.wordpress.org"]];
+
+    } else if ([rowItem.rowID isEqualToString:EmailSupportRowID]) {
         if ([MFMailComposeViewController canSendMail]) {
             MFMailComposeViewController *mailComposeViewController = [self feedbackMailViewController];
             [self presentViewController:mailComposeViewController animated:YES completion:nil];
@@ -458,17 +573,16 @@ typedef NS_ENUM(NSInteger, SettingsViewControllerSections)
             [WPError showAlertWithTitle:NSLocalizedString(@"Feedback", @"A title of a prompt, giving feedback on an action taken by the user.")
                                 message:NSLocalizedString(@"Your device is not configured to send e-mail.", @"A short error message warning that the user's device is not set up to send email.")];
         }
-    } else if (indexPath.section == SettingsSectionActivityLog) {
-        if (indexPath.row == 3) {
-            ActivityLogViewController *activityLogViewController = [[ActivityLogViewController alloc] init];
-            [self.navigationController pushViewController:activityLogViewController animated:YES];
 
-        } else if (indexPath.row == 4) {
-            NSString *nibName = NSStringFromClass([AboutViewController class]);
-            AboutViewController *aboutViewController = [[AboutViewController alloc] initWithNibName:nibName bundle:nil];
-            [self.navigationController pushViewController:aboutViewController animated:YES];
+    } else if ([rowItem.rowID isEqualToString:AboutRowID]) {
+        NSString *nibName = NSStringFromClass([AboutViewController class]);
+        AboutViewController *aboutViewController = [[AboutViewController alloc] initWithNibName:nibName bundle:nil];
+        [self.navigationController pushViewController:aboutViewController animated:YES];
 
-        }
+    } else if ([rowItem.rowID isEqualToString:ActivityLogsRowID]) {
+        ActivityLogViewController *activityLogViewController = [[ActivityLogViewController alloc] init];
+        [self.navigationController pushViewController:activityLogViewController animated:YES];
+
     }
 }
 
