@@ -1,7 +1,6 @@
 #import "WPBlogTableViewCellViewModel.h"
 #import "Blog.h"
-#import "AccountService.h"
-#import "ContextManager.h"
+#import "AccountActions.h"
 
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
@@ -44,8 +43,7 @@
 {
     self.visibilitySwitchCommand = [[RACCommand alloc] initWithSignalBlock:^RACSignal *(UISwitch *sender) {
         BOOL visible = sender.on;
-        AccountService *accountService = [[AccountService alloc] initWithManagedObjectContext:[[ContextManager sharedInstance] mainContext]];
-        [accountService setVisibility:visible forBlogs:@[self.blog]];
+        [AccountActions setVisibility:visible forBlogID:self.blog.dotComID];
         return [RACSignal empty];
     }];
 }
