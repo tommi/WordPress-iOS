@@ -45,6 +45,10 @@
                                        reduce:^(NSString *title, NSString *url){
                                            return (title.length > 0) ? url : @"";
                                        }];
+    RAC(self.detailTextLabel, textColor) = [RACObserve(self.viewModel, visible) map:^UIColor *(NSNumber *visible) {
+        return visible.boolValue ? [WPStyleGuide whisperGrey] : [WPStyleGuide readGrey];
+    }];
+
     [RACObserve(self.viewModel, icon) subscribeNext:^(NSString *icon) {
         [self.imageView setImageWithSiteIcon:icon];
     }];
