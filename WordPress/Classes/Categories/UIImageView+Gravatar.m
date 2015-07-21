@@ -54,7 +54,11 @@ NSString *const GravatarRatingX = @"x";
 {
     UIImage *blavatarDefaultImage = [UIImage imageNamed:BlavatarDefault];
 
-    [self setImageWithSiteIcon:siteIcon placeholderImage:blavatarDefaultImage];
+    if (siteIcon) {
+        [self setImageWithSiteIcon:siteIcon placeholderImage:blavatarDefaultImage];
+    } else {
+        [self setImage:blavatarDefaultImage];
+    }
 }
 
 - (void)setImageWithSiteIcon:(NSString *)siteIcon placeholderImage:(UIImage *)placeholderImage

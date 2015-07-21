@@ -6,6 +6,7 @@
 #import "BlogDetailsViewController.h"
 #import "WPTableViewCell.h"
 #import "WPBlogTableViewCell.h"
+#import "WPBlogTableViewCellViewModel.h"
 #import "ContextManager.h"
 #import "Blog.h"
 #import "WPAccount.h"
@@ -376,8 +377,6 @@ static CGFloat const BLVCSectionHeaderHeightForIPad = 40.0;
 
     if ([indexPath isEqual:[self indexPathForAddSite]]) {
         [WPStyleGuide configureTableViewActionCell:cell];
-    } else {
-        [WPStyleGuide configureTableViewSmallSubtitleCell:cell];
     }
 
     return cell;
@@ -428,26 +427,9 @@ static CGFloat const BLVCSectionHeaderHeightForIPad = 40.0;
 - (void)configureBlogCell:(WPBlogTableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath
 {
     Blog *blog = [self.resultsController objectAtIndexPath:indexPath];
-    if ([blog.blogName length] != 0) {
-        cell.textLabel.text = blog.blogName;
-        cell.detailTextLabel.text = [blog displayURL];
-    } else {
-        cell.textLabel.text = [blog displayURL];
-        cell.detailTextLabel.text = @"";
-    }
+    cell.viewModel.blog = blog;
     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     cell.selectionStyle = self.tableView.isEditing ? UITableViewCellSelectionStyleNone : UITableViewCellSelectionStyleBlue;
-
-    [cell.imageView setImageWithSiteIcon:blog.icon];
-    cell.visibilitySwitch.on = blog.visible;
-    cell.visibilitySwitch.tag = indexPath.row;
-    [cell.visibilitySwitch addTarget:self action:@selector(visibilitySwitchAction:) forControlEvents:UIControlEventValueChanged];
-    cell.visibilitySwitch.accessibilityIdentifier = [NSString stringWithFormat:@"Switch-Visibility-%@", blog.blogName];
-
-    // Make textLabel light gray if blog is not-visible
-    if (!blog.visible) {
-        [cell.textLabel setTextColor:[WPStyleGuide readGrey]];
-    }
 }
 
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section

@@ -256,6 +256,7 @@ NSString * const WPAccountEmailAndDefaultBlogUpdatedNotification = @"WPAccountEm
         }
         blog.visible = visible;
     }
+    DDLogVerbose(@"Setting visibility of blogs %@", blogVisibility);
     AccountServiceRemoteREST *remote = [self remoteForAccount:[self defaultWordPressComAccount]];
     [remote updateBlogsVisibility:blogVisibility success:nil failure:^(NSError *error) {
         DDLogError(@"Error setting blog visibility: %@", error);

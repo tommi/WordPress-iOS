@@ -1,4 +1,13 @@
 #import "WPBlogTableViewCell.h"
+#import "WPBlogTableViewCellViewModel.h"
+
+#import "UIImageView+Gravatar.h"
+
+#import <ReactiveCocoa/ReactiveCocoa.h>
+
+@interface WPBlogTableViewCell ()
+@property (nonatomic) WPBlogTableViewCellViewModel *viewModel;
+@end
 
 @implementation WPBlogTableViewCell
 
@@ -20,6 +29,32 @@
         self.editingAccessoryView = visibilitySwitch;
         self.visibilitySwitch = visibilitySwitch;
     }
+
+    [WPStyleGuide configureTableViewSmallSubtitleCell:self];
+    self.viewModel = [WPBlogTableViewCellViewModel new];
+    RAC(self.textLabel, text) = [RACSignal
+                                 combineLatest:@[ RACObserve(self.viewModel, title), RACObserve(self.viewModel, url)]
+                                 reduce:^(NSString *title, NSString *url){
+                                     return (title.length > 0) ? title : url;
+                                 }];
+    RAC(self.textLabel, textColor) = [RACObserve(self.viewModel, visible) map:^UIColor *(NSNumber *visible) {
+        return visible.boolValue ? [WPStyleGuide whisperGrey] : [WPStyleGuide readGrey];
+    }];
+    RAC(self.detailTextLabel, text) = [RACSignal
+                                       combineLatest:@[ RACObserve(self.viewModel, title), RACObserve(self.viewModel, url)]
+                                       reduce:^(NSString *title, NSString *url){
+                                           return (title.length > 0) ? url : @"";
+                                       }];
+    [RACObserve(self.viewModel, icon) subscribeNext:^(NSString *icon) {
+        [self.imageView setImageWithSiteIcon:icon];
+    }];
+    RAC(self.visibilitySwitch, on) = RACObserve(self.viewModel, visible);
+
+    [[self.visibilitySwitch
+      rac_signalForControlEvents:UIControlEventValueChanged]
+     subscribeNext:^(UISwitch *swtch) {
+         [self.viewModel.visibilitySwitchCommand execute:swtch];
+     }];
 }
 
 @end
