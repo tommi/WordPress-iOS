@@ -7,61 +7,61 @@
 #import "WPAccount.h"
 
 static const NSTimeInterval VisibilityThrottle = 2.0;
-static NSMutableDictionary *visibilityBuffer;
 static NSTimer *visibilityTimer;
+static AccountActions *instance;
+
+
+@interface AccountActions ()
+
+@property (nonatomic, strong) RACSubject *updateVisibilitySignal;
+
+@end
+
 
 @implementation AccountActions
 
 #pragma mark - Public Methods
 
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        _updateVisibilitySignal = [RACSubject new];
+        [self startObservation];
+    }
+    return self;
+}
+
 + (void)setVisibility:(BOOL)visibility forBlogID:(NSNumber *)blogID
 {
     NSParameterAssert(blogID != nil);
-    [self updateLocalVisibility:visibility forBlogID:blogID];
-    [[self visibilityBuffer] setObject:@(visibility) forKey:blogID];
-    [self maybeStartTimer];
+    [[self sharedInstance] updateLocalVisibility:visibility forBlogID:blogID];
+    [[self sharedInstance] setObject:@(visibility) forKey:blogID];
 }
 
 #pragma mark - Private Methods
 
-+ (NSMutableDictionary *)visibilityBuffer
++ (instancetype)sharedInstance
 {
-    if (!visibilityBuffer) {
-        DDLogVerbose(@"Creating visibility bufffer");
-        visibilityBuffer = [NSMutableDictionary dictionary];
-    }
-    return visibilityBuffer;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        instance = [[AccountActions alloc] init];
+    });
+    return instance;
 }
 
-+ (void)maybeStartTimer
+- (void)startObservation
 {
-    if (!visibilityTimer) {
-        DDLogVerbose(@"Creating visibility timer");
-        visibilityTimer = [NSTimer scheduledTimerWithTimeInterval:VisibilityThrottle
-                                                           target:self
-                                                         selector:@selector(timerFired:)
-                                                         userInfo:nil
-                                                          repeats:NO];
-    }
-}
-
-+ (void)timerFired:(NSTimer *)timer
-{
-    DDLogVerbose(@"Visibility timer fired");
-    AccountService *accountService = [[AccountService alloc] initWithManagedObjectContext:[[ContextManager sharedInstance] mainContext]];
-    WPAccount *defaultAccount = [accountService defaultWordPressComAccount];
-    DDLogVerbose(@"Setting visibility of blogs %@", [self visibilityBuffer]);
-    AccountServiceRemoteREST *remote = [[AccountServiceRemoteREST alloc] initWithApi:defaultAccount.restApi];
-    [remote updateBlogsVisibility:[self visibilityBuffer]
-                          success:nil
-                          failure:^(NSError *error) {
-        DDLogError(@"Error setting blog visibility: %@", error);
+    [[self.updateVisibilitySignal bufferWithTime:2.0 onScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]] subscribeNext:^(RACTuple *results) {
+        NSMutableDictionary *aggregatedValues = [@{} mutableCopy];
+        for (NSDictionary *value in results) {
+            [aggregatedValues addEntriesFromDictionary:value];
+        }
+        [self updateRemoteBlogsVisibility:aggregatedValues];
     }];
-    visibilityBuffer = nil;
-    visibilityTimer = nil;
 }
 
-+ (void)updateLocalVisibility:(BOOL)visibility forBlogID:(NSNumber *)blogID
+- (void)updateLocalVisibility:(BOOL)visibility forBlogID:(NSNumber *)blogID
 {
     NSManagedObjectContext *context = [[ContextManager sharedInstance] mainContext];
     BlogService *blogService = [[BlogService alloc] initWithManagedObjectContext:context];
@@ -70,6 +70,24 @@ static NSTimer *visibilityTimer;
         blog.visible = visibility;
         [[ContextManager sharedInstance] saveContext:context];
     }
+}
+
+- (void)setObject:(id)anObject forKey:(id <NSCopying>)aKey;
+{
+    [self.updateVisibilitySignal sendNext:@{aKey:anObject}];
+}
+
+- (void)updateRemoteBlogsVisibility:(NSDictionary *)values
+{
+    AccountService *accountService = [[AccountService alloc] initWithManagedObjectContext:[[ContextManager sharedInstance] mainContext]];
+    WPAccount *defaultAccount = [accountService defaultWordPressComAccount];
+    DDLogVerbose(@"Setting visibility of blogs %@", values);
+    AccountServiceRemoteREST *remote = [[AccountServiceRemoteREST alloc] initWithApi:defaultAccount.restApi];
+    [remote updateBlogsVisibility:values
+                          success:nil
+                          failure:^(NSError *error) {
+                              DDLogError(@"Error setting blog visibility: %@", error);
+                          }];
 }
 
 @end
