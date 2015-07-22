@@ -28,14 +28,14 @@
  */
 - (RACSignal *)bufferAndThrottleWithTime:(NSTimeInterval)interval onScheduler:(RACScheduler *)scheduler
 {
-	NSParameterAssert(interval >= 0);
-	NSParameterAssert(scheduler != RACScheduler.immediateScheduler);
-
-	return [[RACSignal createSignal:^(id<RACSubscriber> subscriber) {
-		RACCompoundDisposable *compoundDisposable = [RACCompoundDisposable compoundDisposable];
-
+    NSParameterAssert(interval >= 0);
+    NSParameterAssert(scheduler != RACScheduler.immediateScheduler);
+    
+    return [[RACSignal createSignal:^(id<RACSubscriber> subscriber) {
+        RACCompoundDisposable *compoundDisposable = [RACCompoundDisposable compoundDisposable];
+        
         __block NSMutableArray *values = [@[] mutableCopy];
-		RACSerialDisposable *timerDisposable = [[RACSerialDisposable alloc] init];
+        RACSerialDisposable *timerDisposable = [[RACSerialDisposable alloc] init];
         
         void (^resetTimer)() = ^{
             @synchronized(values){
@@ -58,29 +58,29 @@
                 [values removeAllObjects];
             }
         };
-
-		RACDisposable *selfDisposable = [self subscribeNext:^(id x) {
-			@synchronized (values) {
+        
+        RACDisposable *selfDisposable = [self subscribeNext:^(id x) {
+            @synchronized (values) {
                 resetTimer();
                 
-				[values addObject:x ?: RACTupleNil.tupleNil];
+                [values addObject:x ?: RACTupleNil.tupleNil];
                 
-				timerDisposable.disposable = [scheduler afterDelay:interval schedule:^{
+                timerDisposable.disposable = [scheduler afterDelay:interval schedule:^{
                     flushValues();
-				}];
-			}
-		} error:^(NSError *error) {
-			[compoundDisposable dispose];
-			[subscriber sendError:error];
-		} completed:^{
+                }];
+            }
+        } error:^(NSError *error) {
+            [compoundDisposable dispose];
+            [subscriber sendError:error];
+        } completed:^{
             flushValues();
-			[subscriber sendCompleted];
-		}];
-
-		[compoundDisposable addDisposable:selfDisposable];
+            [subscriber sendCompleted];
+        }];
+        
+        [compoundDisposable addDisposable:selfDisposable];
         [compoundDisposable addDisposable:timerDisposable];
-		return compoundDisposable;
-	}] setNameWithFormat:@"[%@] -bufferAndThrottleWithTime: %f onScheduler: %@", self.name, (double)interval, scheduler];
+        return compoundDisposable;
+    }] setNameWithFormat:@"[%@] -bufferAndThrottleWithTime: %f onScheduler: %@", self.name, (double)interval, scheduler];
 }
 
 @end
