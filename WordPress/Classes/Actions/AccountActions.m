@@ -5,18 +5,17 @@
 #import "BlogService.h"
 #import "ContextManager.h"
 #import "WPAccount.h"
+#import "RACSignal+WPExtras.h"
 
 static const NSTimeInterval VisibilityThrottle = 2.0;
 static NSTimer *visibilityTimer;
 static AccountActions *instance;
-
 
 @interface AccountActions ()
 
 @property (nonatomic, strong) RACSubject *updateVisibilitySignal;
 
 @end
-
 
 @implementation AccountActions
 
@@ -52,7 +51,18 @@ static AccountActions *instance;
 
 - (void)startObservation
 {
-    [[self.updateVisibilitySignal bufferWithTime:2.0 onScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]] subscribeNext:^(RACTuple *results) {
+    [[self.updateVisibilitySignal bufferWithTime:VisibilityThrottle onScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]] subscribeNext:^(RACTuple *results) {
+        NSMutableDictionary *aggregatedValues = [@{} mutableCopy];
+        for (NSDictionary *value in results) {
+            [aggregatedValues addEntriesFromDictionary:value];
+        }
+        [self updateRemoteBlogsVisibility:aggregatedValues];
+    }];
+}
+
+- (void)startThrottledAndBufferedObservation
+{
+    [[self.updateVisibilitySignal bufferAndThrottleWithTime:VisibilityThrottle onScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityHigh]] subscribeNext:^(RACTuple *results) {
         NSMutableDictionary *aggregatedValues = [@{} mutableCopy];
         for (NSDictionary *value in results) {
             [aggregatedValues addEntriesFromDictionary:value];
