@@ -73,14 +73,13 @@ static NSString * const UserDictionaryAvatarURLKey = @"avatar_URL";
 
 - (NSArray *)remoteBlogsFromJSONArray:(NSArray *)jsonBlogs
 {
-    NSMutableArray *remoteBlogs = [NSMutableArray arrayWithCapacity:[jsonBlogs count]];
-    for (NSDictionary *jsonBlog in jsonBlogs) {
+    return [[jsonBlogs wp_filter:^BOOL(NSDictionary *jsonBlog) {
         BOOL isJetpack = [jsonBlog[@"jetpack"] boolValue];
-        if (!isJetpack || JetpackREST.enabled) {
-            [remoteBlogs addObject:[self remoteBlogFromJSONDictionary:jsonBlog]];
-        }
-    }
-    return [NSArray arrayWithArray:remoteBlogs];
+
+        return (!isJetpack || JetpackREST.enabled);
+    }] wp_map:^id(NSDictionary *jsonBlog) {
+        return [self remoteBlogFromJSONDictionary:jsonBlog];
+    }];
 }
 
 - (RemoteBlog *)remoteBlogFromJSONDictionary:(NSDictionary *)jsonBlog
