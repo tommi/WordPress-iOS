@@ -7,8 +7,8 @@ extension NSCalendar
         let fromDate = date.normalizedDate()
         let toDate = NSDate().normalizedDate()
         
-        let flags = NSCalendarUnit.DayCalendarUnit
-        let delta = components(flags, fromDate: fromDate, toDate: toDate, options: nil)
+        let flags = NSCalendarUnit.Day
+        let delta = components(flags, fromDate: fromDate, toDate: toDate, options: NSCalendarOptions())
         
         return delta.day
     }

@@ -74,7 +74,7 @@ public class NotificationSettingStreamsViewController : UITableViewController
         
         // Structures
         settings       = streamSettings
-        sortedStreams  = streamSettings.streams.sorted { $0.kind.description() > $1.kind.description() }
+        sortedStreams  = streamSettings.streams.sort { $0.kind.description() > $1.kind.description() }
         
         tableView.reloadData()
     }

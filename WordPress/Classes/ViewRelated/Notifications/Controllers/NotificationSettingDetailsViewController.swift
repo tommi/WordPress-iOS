@@ -194,8 +194,12 @@ public class NotificationSettingDetailsViewController : UITableViewController
             return
         }
         
-        let targetURL = NSURL(string: UIApplicationOpenSettingsURLString)
-        UIApplication.sharedApplication().openURL(targetURL!)
+        if #available(iOS 8.0, *) {
+            let targetURL = NSURL(string: UIApplicationOpenSettingsURLString)
+            UIApplication.sharedApplication().openURL(targetURL!)
+        } else {
+            // Fallback on earlier versions
+        }
     }
     
     

@@ -277,16 +277,16 @@ import Foundation
         // Always reset
         avatarImageView.image = nil
 
-        var placeholder = UIImage(named: "post-blavatar-placeholder")
+        let placeholder = UIImage(named: "post-blavatar-placeholder")
 
         if loadMediaWhenConfigured && contentProvider?.avatarURLForDisplay() != nil {
-            var url = contentProvider?.avatarURLForDisplay()
+            let url = contentProvider?.avatarURLForDisplay()
             avatarImageView.setImageWithURL(url, placeholderImage: placeholder)
         } else {
             avatarImageView.image = placeholder
         }
 
-        var blogName = contentProvider?.blogNameForDisplay()
+        let blogName = contentProvider?.blogNameForDisplay()
         blogNameButton.setTitle(blogName, forState: .Normal)
         blogNameButton.setTitle(blogName, forState: .Highlighted)
 
@@ -333,17 +333,16 @@ import Foundation
 
     private func requestForURL(url:NSURL) -> NSURLRequest {
         var requestURL = url
-        if let absoluteString = requestURL.absoluteString {
-            if !(absoluteString.hasPrefix("https")) {
-                var sslURL = absoluteString.stringByReplacingOccurrencesOfString("http", withString: "https")
-                requestURL = NSURL(string: sslURL)!
-            }
+        let absoluteString = requestURL.absoluteString
+        if !(absoluteString.hasPrefix("https")) {
+            let sslURL = absoluteString.stringByReplacingOccurrencesOfString("http", withString: "https")
+            requestURL = NSURL(string: sslURL)!
         }
 
         let acctServ = AccountService(managedObjectContext: ContextManager.sharedInstance().mainContext)
         let token = acctServ.defaultWordPressComAccount().authToken
-        var request = NSMutableURLRequest(URL: requestURL)
-        var headerValue = String(format: "Bearer %@", token)
+        let request = NSMutableURLRequest(URL: requestURL)
+        let headerValue = String(format: "Bearer %@", token)
         request.addValue(headerValue, forHTTPHeaderField: "Authorization")
 
         return request
@@ -352,7 +351,7 @@ import Foundation
     private func configureTitle() {
         if let title = contentProvider?.titleForDisplay() {
             let attributes = WPStyleGuide.readerCardTitleAttributes()
-            titleLabel.attributedText = NSAttributedString(string: title, attributes: attributes)
+            titleLabel.attributedText = NSAttributedString(string: title, attributes: attributes as? [String:AnyObject])
             titleLabelBottomConstraint.constant = titleLabelBottomConstraintConstant
 
         } else {
@@ -364,7 +363,7 @@ import Foundation
     private func configureSummary() {
         if let summary = contentProvider?.contentPreviewForDisplay() {
             let attributes = WPStyleGuide.readerCardSummaryAttributes()
-            summaryLabel.attributedText = NSAttributedString(string: summary, attributes: attributes)
+            summaryLabel.attributedText = NSAttributedString(string: summary, attributes: attributes as? [String:AnyObject])
             summaryLabelBottomConstraint.constant = summaryLabelBottomConstraintConstant
 
         } else {
@@ -416,21 +415,21 @@ import Foundation
             return nil
         }
 
-        var attrStr = NSMutableAttributedString()
+        let attrStr = NSMutableAttributedString()
 
         if let theWordCount = wordCount {
-            var wordsStr = NSLocalizedString("words",
+            let wordsStr = NSLocalizedString("words",
                                             comment: "Part of a label letting the user know how any words are in a post. For example: '300 words'")
 
-            var countStr = String(format: "%d %@ ", theWordCount, wordsStr)
-            var attributes = WPStyleGuide.readerCardWordCountAttributes()
-            var attrWordCount = NSAttributedString(string: countStr, attributes: attributes)
+            let countStr = String(format: "%d %@ ", theWordCount, wordsStr)
+            let attributes = WPStyleGuide.readerCardWordCountAttributes()
+            let attrWordCount = NSAttributedString(string: countStr, attributes: attributes as? [String:AnyObject])
             attrStr.appendAttributedString(attrWordCount)
         }
 
         if let theReadingTime = readingTime {
-            var attributes = WPStyleGuide.readerCardReadingTimeAttributes()
-            var attrReadingTime = NSAttributedString(string: theReadingTime, attributes: attributes)
+            let attributes = WPStyleGuide.readerCardReadingTimeAttributes()
+            let attrReadingTime = NSAttributedString(string: theReadingTime, attributes: attributes as? [String:AnyObject])
             attrStr.appendAttributedString(attrReadingTime)
         }
 
@@ -500,8 +499,8 @@ import Foundation
         let title = contentProvider!.isLiked() ? likedStr : likeStr
 
         let imageName = contentProvider!.isLiked() ? "icon-reader-liked" : "icon-reader-like"
-        var image = UIImage(named: imageName)
-        var highlightImage = UIImage(named: "icon-reader-like-highlight")
+        let image = UIImage(named: imageName)
+        let highlightImage = UIImage(named: "icon-reader-like-highlight")
 
         configureActionButton(button, title: title, image: image, highlightedImage: highlightImage)
     }
@@ -509,16 +508,16 @@ import Foundation
     private func configureCommentActionButton(button: UIButton) {
         button.tag = CardAction.Comment.rawValue
         let title = contentProvider?.commentCount().stringValue
-        var image = UIImage(named: "icon-reader-comment")
-        var highlightImage = UIImage(named: "icon-reader-comment-highlight")
+        let image = UIImage(named: "icon-reader-comment")
+        let highlightImage = UIImage(named: "icon-reader-comment-highlight")
         configureActionButton(button, title: title, image: image, highlightedImage: highlightImage)
     }
 
     private func configureVisitActionButton(button: UIButton) {
         button.tag = CardAction.Visit.rawValue
         let title = NSLocalizedString("Visit", comment: "Text for the 'visit' button. Tapping takes the user to the web page for a post being viewed in the reader.")
-        var image = UIImage(named: "icon-reader-visit")
-        var highlightImage = UIImage(named: "icon-reader-visit-highlight")
+        let image = UIImage(named: "icon-reader-visit")
+        let highlightImage = UIImage(named: "icon-reader-visit-highlight")
         configureActionButton(button, title: title, image: image, highlightedImage: highlightImage)
     }
 
@@ -569,7 +568,7 @@ import Foundation
             return
         }
 
-        var tag = CardAction(rawValue: sender.tag)!
+        let tag = CardAction(rawValue: sender.tag)!
         switch tag {
         case .Comment :
             delegate?.readerCell(self, commentActionForProvider: contentProvider!)

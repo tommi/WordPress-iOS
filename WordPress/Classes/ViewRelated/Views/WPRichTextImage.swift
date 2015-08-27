@@ -23,7 +23,7 @@ class WPRichTextImage : UIControl, WPRichTextMediaAttachment {
 
     override init(frame: CGRect) {
         imageView = UIImageView(frame: CGRectMake(0, 0, frame.width, frame.height));
-        imageView.autoresizingMask = .FlexibleWidth | .FlexibleHeight
+        imageView.autoresizingMask = [.FlexibleWidth, .FlexibleHeight]
         imageView.contentMode = .ScaleAspectFit
 
         super.init(frame: frame)

@@ -53,7 +53,7 @@ import Foundation
         super.awakeFromNib()
         
         accessoryType                   = .DisclosureIndicator
-        contentView.autoresizingMask    = .FlexibleHeight | .FlexibleWidth
+        contentView.autoresizingMask    = [UIViewAutoresizing.FlexibleHeight, UIViewAutoresizing.FlexibleWidth]
         
         backgroundColor                 = WPStyleGuide.Notifications.blockBackgroundColor
         headerTitleLabel.font           = WPStyleGuide.Notifications.headerTitleBoldFont

@@ -144,11 +144,11 @@ public class NotificationSettingsViewController : UIViewController
     
     public func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let identifier  = reusableIdentifierForIndexPath(indexPath)
-        let cell        = tableView.dequeueReusableCellWithIdentifier(identifier) as! UITableViewCell
+        let cell        = tableView.dequeueReusableCellWithIdentifier(identifier)
         
-        configureCell(cell, indexPath: indexPath)
+        configureCell(cell!, indexPath: indexPath)
         
-        return cell
+        return cell!
     }
     
     public func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {

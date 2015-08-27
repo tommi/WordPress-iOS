@@ -69,7 +69,7 @@ class TodayViewController: UIViewController, NCWidgetProviding {
             WPDDLogWrapper.logError("Missing site ID, timeZone or oauth2Token")
             
             let bundle = NSBundle(forClass: TodayViewController.classForCoder())
-            NCWidgetController.widgetController().setHasContent(false, forWidgetWithBundleIdentifier: bundle.bundleIdentifier)
+            NCWidgetController.widgetController().setHasContent(false, forWidgetWithBundleIdentifier: bundle.bundleIdentifier!)
             
             completionHandler(NCUpdateResult.Failed)
             return
@@ -99,9 +99,10 @@ class TodayViewController: UIViewController, NCWidgetProviding {
     func getOAuth2Token() -> String? {
         var error:NSError?
         
-        var oauth2Token:NSString? = SFHFKeychainUtils.getPasswordForUsername(WPStatsTodayWidgetOAuth2TokenKeychainUsername, andServiceName: WPStatsTodayWidgetOAuth2TokenKeychainServiceName, accessGroup: WPStatsTodayWidgetOAuth2TokenKeychainAccessGroup, error: &error)
-        
-        return oauth2Token as String?
+        return nil;
+//        var oauth2Token:NSString? = SFHFKeychainUtils.getPasswordForUsername(WPStatsTodayWidgetOAuth2TokenKeychainUsername, andServiceName: WPStatsTodayWidgetOAuth2TokenKeychainServiceName, accessGroup: WPStatsTodayWidgetOAuth2TokenKeychainAccessGroup, error: &error)
+//        
+//        return oauth2Token as String?
     }
     
 }

@@ -203,7 +203,7 @@ extension NotificationBlock
         }
         
         // Format the String
-        let theString = NSMutableAttributedString(string: text, attributes: attributes)
+        let theString = NSMutableAttributedString(string: text, attributes: attributes as? [String:AnyObject])
 
         // Apply Quotes Styles
         if let unwrappedQuoteStyles = quoteStyles {
@@ -220,11 +220,11 @@ extension NotificationBlock
             if range.isNoticon {
                 let noticon         = "\(range.value) "
                 theString.replaceCharactersInRange(shiftedRange, withString: noticon)
-                lengthShift         += count(noticon)
-                shiftedRange.length += count(noticon)
+                lengthShift         += noticon.characters.count
+                shiftedRange.length += noticon.characters.count
             }
             
-            if let unwrappedRangeStyle = rangeStylesMap?[range.type] as? [NSString: AnyObject] {
+            if let unwrappedRangeStyle = rangeStylesMap?[range.type] as? [String: AnyObject] {
                 theString.addAttributes(unwrappedRangeStyle, range: shiftedRange)
             }
             

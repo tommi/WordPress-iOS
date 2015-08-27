@@ -48,15 +48,16 @@ import Foundation
     }
 
     private func configurePostAttribution(contentProvider: ReaderPostContentProvider) {
-        var url = contentProvider.sourceAvatarURLForDisplay()
-        var placeholder = UIImage(named: gravatarImageName)
+        let url = contentProvider.sourceAvatarURLForDisplay()
+        let placeholder = UIImage(named: gravatarImageName)
         imageView.setImageWithURL(url, placeholderImage: placeholder)
         imageView.shouldRoundCorners = true
 
         let str = stringForPostAttribution(contentProvider.sourceAuthorNameForDisplay(),
                                             blogName: contentProvider.sourceBlogNameForDisplay())
         let attributes = WPStyleGuide.originalAttributionParagraphAttributes()
-        richTextView.attributedText = NSAttributedString(string: str, attributes: attributes)
+        
+        richTextView.attributedText = NSAttributedString(string: str, attributes: attributes as? [String:AnyObject])
     }
 
     private func stringForPostAttribution(authorName: String?, blogName: String?) -> String {
@@ -81,8 +82,8 @@ import Foundation
     }
 
     private func configureSiteAttribution(contentProvider: ReaderPostContentProvider) {
-        var url = contentProvider.sourceAvatarURLForDisplay()
-        var placeholder = UIImage(named: blavatarImageName)
+        let url = contentProvider.sourceAvatarURLForDisplay()
+        let placeholder = UIImage(named: blavatarImageName)
         imageView.setImageWithURL(url, placeholderImage: placeholder)
         imageView.shouldRoundCorners = false
 
@@ -91,11 +92,11 @@ import Foundation
         let str = String(format: pattern, blogName)
 
         let attributes = WPStyleGuide.siteAttributionParagraphAttributes()
-        let attributedString = NSMutableAttributedString(string: str, attributes: attributes)
+        let attributedString = NSMutableAttributedString(string: str, attributes: attributes as? [String:AnyObject])
         let range = (str as NSString).rangeOfString(blogName)
         let font = WPFontManager.openSansItalicFontOfSize(WPStyleGuide.originalAttributionFontSize());
         attributedString.addAttribute(NSFontAttributeName, value: font, range: range)
-        attributedString.addAttribute(NSLinkAttributeName, value: "http://wordpress.com/", range: NSMakeRange(0, count(str)))
+        attributedString.addAttribute(NSLinkAttributeName, value: "http://wordpress.com/", range: NSMakeRange(0, str.characters.count))
 
         richTextView.attributedText = attributedString
     }

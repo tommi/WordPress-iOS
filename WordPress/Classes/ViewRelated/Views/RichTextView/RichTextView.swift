@@ -98,7 +98,7 @@ import Foundation
     
     public var linkTextAttributes: [NSObject : AnyObject]! {
         set {
-            textView.linkTextAttributes = newValue
+            textView.linkTextAttributes = newValue as! [String:AnyObject]
         }
         get {
             return textView.linkTextAttributes
@@ -176,7 +176,7 @@ import Foundation
         addSubview(textView)
         
         // Setup Layout
-        textView.setTranslatesAutoresizingMaskIntoConstraints(false)
+        textView.translatesAutoresizingMaskIntoConstraints = false
         pinSubviewToAllEdges(textView)
     }
 

@@ -11,8 +11,8 @@ extension Notification
 
         // Analyze the Delta-Components
         let calendar                = NSCalendar.currentCalendar()
-        let flags: NSCalendarUnit   = .DayCalendarUnit | .WeekOfYearCalendarUnit | .MonthCalendarUnit
-        let components              = calendar.components(flags, fromDate: fromDate, toDate: toDate, options: nil)
+        let flags: NSCalendarUnit   = [NSCalendarUnit.Day,NSCalendarUnit.WeekOfYear,  NSCalendarUnit.Month]
+        let components              = calendar.components(flags, fromDate: fromDate, toDate: toDate, options: [])
         
         var identifier: Int
 
@@ -38,8 +38,12 @@ extension Notification
     
     public class func descriptionForSectionIdentifier(identifier: String) -> String {
         let components      = identifier.componentsSeparatedByString(":")
-        let wrappedKind     = components.first?.toInt()
-        let wrappedPayload  = components.last?.toInt()
+        if components.count < 2 {
+            return String()
+        }
+        
+        let wrappedKind:Int?     = Int(components.first!)
+        let wrappedPayload:Int?  = Int(components.last!)
 
         if wrappedKind == nil || wrappedPayload == nil {
             return String()

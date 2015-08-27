@@ -105,8 +105,7 @@ import Foundation
     public override func awakeFromNib() {
         super.awakeFromNib()
 
-        contentView.autoresizingMask    = .FlexibleHeight | .FlexibleWidth
-
+        contentView.autoresizingMask = [UIViewAutoresizing.FlexibleWidth, UIViewAutoresizing.FlexibleHeight]
         iconImageView.image             = WPStyleGuide.Notifications.gravatarPlaceholderImage
 
         noticonContainerView.layer.cornerRadius = noticonContainerView.frame.size.width / 2
@@ -175,7 +174,7 @@ import Foundation
     }
     
     private func refreshSubviewVisibility() {
-        for subview in contentView.subviews as! [UIView] {
+        for subview in contentView.subviews as [UIView] {
             subview.hidden = markedForDeletion
         }
     }
@@ -197,7 +196,7 @@ import Foundation
         if undoOverlayView == nil {
             let nibName = NoteUndoOverlayView.classNameWithoutNamespaces()
             NSBundle.mainBundle().loadNibNamed(nibName, owner: self, options: nil)
-            undoOverlayView.setTranslatesAutoresizingMaskIntoConstraints(false)
+            undoOverlayView.translatesAutoresizingMaskIntoConstraints = false
         }
 
         // Attach

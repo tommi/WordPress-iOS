@@ -65,7 +65,7 @@ import Foundation
         assert(titleLabel   != nil)
         
         // Layout
-        contentView.setTranslatesAutoresizingMaskIntoConstraints(false)
+        contentView.translatesAutoresizingMaskIntoConstraints = false;
         pinSubviewToAllEdges(contentView)
         
         // Background + Separators
